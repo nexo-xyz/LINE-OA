@@ -981,8 +981,10 @@
 
     <script>
         // ===== CONFIGURATION =====
-        // เปลี่ยน URL นี้เป็น Web App URL ของคุณหลังจาก Deploy GAS
+        // ⚠️ เปลี่ยน URL นี้เป็น Cloudflare Worker URL ของคุณ (หรือ GAS URL โดยตรงถ้าไม่ใช้ Worker)
         const GAS_WEBAPP_URL = 'https://muddy-union-755b.sampan082.workers.dev/';
+        // ตัวอย่าง: 'https://line-shop-proxy.myusername.workers.dev'
+        // หรือถ้าใช้ GAS โดยตรง: 'https://script.google.com/macros/s/YOUR_DEPLOYED_ID/exec'
 
         // โหมดการทำงาน
         let isGAS = false;
@@ -1039,7 +1041,7 @@
         // ===== GAS CALL WRAPPER =====
         async function gasCall(fnName, args, onSuccess) {
             if (isGAS) {
-                // เรียก GAS Web App จริง
+                // เรียก GAS Web App จริง (ผ่าน Worker Proxy)
                 try {
                     console.log(`[GAS] Calling ${fnName}...`);
                     const res = await fetch(GAS_WEBAPP_URL, {
