@@ -5,23 +5,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>LINE Shop Admin</title>
+    <!-- Google Fonts (Noto Sans Thai) -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        @font-face {
-            font-family: 'LINESeed';
-            src: url('https://cdn.jsdelivr.net/npm/line-seed-font@1.0.0/fonts/LINESeedSansTH_W_Rg.woff') format('woff');
-            font-weight: 400
-        }
-
-        @font-face {
-            font-family: 'LINESeed';
-            src: url('https://cdn.jsdelivr.net/npm/line-seed-font@1.0.0/fonts/LINESeedSansTH_W_Bd.woff') format('woff');
-            font-weight: 700
-        }
-
         * {
             margin: 0;
             padding: 0;
-            box-sizing: border-box
+            box-sizing: border-box;
+            font-family: 'Noto Sans Thai', sans-serif;
         }
 
         :root {
@@ -44,7 +35,6 @@
         }
 
         body {
-            font-family: 'LINESeed', sans-serif;
             background: var(--bg);
             color: var(--text);
             min-height: 100vh
@@ -228,7 +218,7 @@
             border-radius: 8px;
             border: none;
             cursor: pointer;
-            font-family: 'LINESeed', sans-serif;
+            font-family: 'Noto Sans Thai', sans-serif;
             font-size: 13px;
             font-weight: 700;
             transition: .2s;
@@ -595,7 +585,7 @@
             border-radius: 8px;
             padding: 9px 12px;
             color: var(--text);
-            font-family: 'LINESeed', sans-serif;
+            font-family: 'Noto Sans Thai', sans-serif;
             font-size: 13px;
             outline: none;
             transition: .2s;
@@ -859,7 +849,7 @@
             border-radius: 6px;
             padding: 4px 8px;
             color: var(--text);
-            font-family: 'LINESeed', sans-serif;
+            font-family: 'Noto Sans Thai', sans-serif;
             font-size: 12px;
             cursor: pointer
         }
@@ -894,6 +884,35 @@
         .hidden {
             display: none !important
         }
+
+        /* RESPONSIVE */
+        @media (max-width: 1024px) {
+            .stat-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 60px;
+                min-width: 60px;
+            }
+            .logo-wrap .logo-text,
+            .logo-ver,
+            .nav-sec,
+            .nav-item span:not(.nav-icon) {
+                display: none;
+            }
+            .nav-item {
+                justify-content: center;
+            }
+            .stat-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
     </style>
 </head>
 
@@ -908,8 +927,8 @@
             <input type="password" id="login-pwd" class="form-input" placeholder="รหัสผ่าน" style="margin-bottom:12px">
             <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doLogin()">🔓
                 เข้าสู่ระบบ</button>
-            <p id="login-err" style="color:var(--red);font-size:12px;margin-top:10px;display:none">รหัสผ่านไม่ถูกต้อง
-            </p>
+            <p id="login-err" style="color:var(--red);font-size:12px;margin-top:10px;display:none">รหัสผ่านไม่ถูกต้อง</p>
+            <p style="color:var(--text3);font-size:10px;margin-top:16px" id="env-hint">Environment: Detecting...</p>
         </div>
     </div>
 
@@ -920,7 +939,7 @@
                 <div class="logo-icon">🛒</div>
                 <div>
                     <div class="logo-text">LINE Shop</div>
-                    <div class="logo-ver">Admin Panel v2.0</div>
+                    <div class="logo-ver">Admin Panel v2.1</div>
                 </div>
             </div>
             <div class="nav">
@@ -971,22 +990,183 @@
     <div class="toast" id="toast"></div>
 
     <script>
+        // ===== ENVIRONMENT DETECTION =====
+        const isGAS = typeof google !== 'undefined' && google.script && google.script.run;
+        document.getElementById('env-hint').textContent = isGAS ? 'Environment: Google Apps Script ✅' : 'Environment: Demo Mode (Mock Data) ⚠️';
+
+        // ===== MOCK DATA (for demo/testing on GitHub Pages) =====
+        const MOCK = {
+            stats: {
+                todaySales: 12500,
+                monthSales: 285000,
+                totalSales: 1580000,
+                totalUsers: 452,
+                todayTopup: 3500,
+                monthTopup: 89000,
+                totalTopup: 520000,
+                salesChart: [
+                    { label: '27/4', value: 8500 },
+                    { label: '28/4', value: 12000 },
+                    { label: '29/4', value: 7500 },
+                    { label: '30/4', value: 15000 },
+                    { label: '1/5', value: 11000 },
+                    { label: '2/5', value: 9800 },
+                    { label: '3/5', value: 12500 }
+                ],
+                topupChart: [
+                    { label: '27/4', value: 2000 },
+                    { label: '28/4', value: 3500 },
+                    { label: '29/4', value: 1500 },
+                    { label: '30/4', value: 4000 },
+                    { label: '1/5', value: 3000 },
+                    { label: '2/5', value: 2500 },
+                    { label: '3/5', value: 3500 }
+                ],
+                _orders: []
+            },
+            cats: [
+                { id: 'CAT001', name: 'เครื่องดื่ม', img: 'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=300&h=200&fit=crop', keyword: 'drink,เครื่องดื่ม,น้ำ', active: 'true', createdAt: '2026-05-01T00:00:00.000Z' },
+                { id: 'CAT002', name: 'บัตรเติมเกม', img: 'https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=300&h=200&fit=crop', keyword: 'game,เกม,เติมเกม', active: 'true', createdAt: '2026-05-01T00:00:00.000Z' },
+                { id: 'CAT003', name: 'สติกเกอร์', img: 'https://images.unsplash.com/photo-1572375992501-4b0892d50c69?w=300&h=200&fit=crop', keyword: 'sticker,สติกเกอร์,line', active: 'true', createdAt: '2026-05-01T00:00:00.000Z' }
+            ],
+            prods: [
+                { id: 'PRD001', name: 'ชาเขียวมัทฉะ', img: 'https://images.unsplash.com/photo-1558857563-b371033873b8?w=300&h=200&fit=crop', desc: 'ชาเขียวมัทฉะแท้จากญี่ปุ่น หอมละมุน', price: 65, discountPrice: 55, catId: 'CAT001', active: 'true', createdAt: '2026-05-01T00:00:00.000Z' },
+                { id: 'PRD002', name: 'กาแฟอเมริกาโน่', img: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=300&h=200&fit=crop', desc: 'กาแฟดำเข้มข้น สดชื่นทุกแก้ว', price: 50, discountPrice: 0, catId: 'CAT001', active: 'true', createdAt: '2026-05-01T00:00:00.000Z' },
+                { id: 'PRD003', name: 'บัตรเติม ROV 100 บาท', img: 'https://images.unsplash.com/photo-1612287230202-1ff1d85d1bdf?w=300&h=200&fit=crop', desc: 'เติมเงินเกม ROV 100 บาท ทันใจ', price: 100, discountPrice: 90, catId: 'CAT002', active: 'true', createdAt: '2026-05-01T00:00:00.000Z' },
+                { id: 'PRD004', name: 'สติกเกอร์ LINE คิ้วท์ๆ', img: 'https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=300&h=200&fit=crop', desc: 'สติกเกอร์น่ารัก ส่งให้เพื่อนได้เลย', price: 35, discountPrice: 0, catId: 'CAT003', active: 'true', createdAt: '2026-05-01T00:00:00.000Z' }
+            ],
+            banks: [
+                { id: 'BNK001', accountName: 'สมชาย ใจดี', accountNumber: '123-4-56789-0', bankName: 'ไทยพาณิชย์', img: '', active: 'true', createdAt: '2026-05-01T00:00:00.000Z' },
+                { id: 'BNK002', accountName: 'สมชาย ใจดี', accountNumber: '987-6-54321-0', bankName: 'กสิกรไทย', img: '', active: 'true', createdAt: '2026-05-01T00:00:00.000Z' }
+            ],
+            wallets: [
+                { id: 'WAL001', accountName: 'สมชาย', accountNumber: '089-123-4567', img: '', active: 'true', createdAt: '2026-05-01T00:00:00.000Z' }
+            ],
+            orders: [
+                { id: 'ORD1764683592000', userId: 'U123', displayName: 'ลูกค้า ทดสอบ', productId: 'PRD001', productName: 'ชาเขียวมัทฉะ', qty: 1, unitPrice: 55, totalPrice: 55, status: 'สำเร็จ', paymentMethod: 'bank', slipUrl: '', createdAt: '2026-05-03T10:30:00.000Z', updatedAt: '2026-05-03T10:35:00.000Z' },
+                { id: 'ORD1764683599000', userId: 'U456', displayName: 'คุณ ประหยัด', productId: 'PRD003', productName: 'บัตรเติม ROV 100 บาท', qty: 2, unitPrice: 90, totalPrice: 180, status: 'รอตรวจสลิป', paymentMethod: 'bank', slipUrl: 'MSG123', createdAt: '2026-05-03T11:00:00.000Z', updatedAt: '2026-05-03T11:05:00.000Z' },
+                { id: 'ORD1764683605000', userId: 'U789', displayName: 'น้อง มัธยม', productId: 'PRD004', productName: 'สติกเกอร์ LINE คิ้วท์ๆ', qty: 1, unitPrice: 35, totalPrice: 35, status: 'รอชำระ', paymentMethod: '', slipUrl: '', createdAt: '2026-05-03T11:30:00.000Z', updatedAt: '2026-05-03T11:30:00.000Z' }
+            ]
+        };
+
+        MOCK.stats._orders = MOCK.orders;
+
+        // ===== GAS CALL WRAPPER =====
+        function gasCall(fnName, args, onSuccess) {
+            if (isGAS) {
+                // Real GAS call
+                google.script.run.withSuccessHandler(onSuccess)[fnName](...args);
+            } else {
+                // Mock call - simulate async response
+                console.log(`[Mock] Calling ${fnName} with args:`, args);
+                setTimeout(() => {
+                    const result = mockGetData(fnName, args);
+                    if (result instanceof Promise) {
+                        result.then(onSuccess);
+                    } else {
+                        onSuccess(result);
+                    }
+                }, 300);
+            }
+        }
+
+        function mockGetData(fnName, args) {
+            switch (fnName) {
+                case 'adminGetStats':
+                    return { ...MOCK.stats };
+                case 'adminGetCategories':
+                    return [...MOCK.cats];
+                case 'adminGetProducts':
+                    return [...MOCK.prods];
+                case 'adminGetBanks':
+                    return [...MOCK.banks];
+                case 'adminGetWallets':
+                    return [...MOCK.wallets];
+                case 'adminGetOrders':
+                    return [...MOCK.orders].reverse();
+                case 'adminSaveCategory':
+                    return mockSave('cats', args[0]);
+                case 'adminSaveProduct':
+                    return mockSave('prods', args[0]);
+                case 'adminSaveBank':
+                    return mockSave('banks', args[0]);
+                case 'adminSaveWallet':
+                    return mockSave('wallets', args[0]);
+                case 'adminDeleteCategory':
+                    return mockDelete('cats', args[0]);
+                case 'adminDeleteProduct':
+                    return mockDelete('prods', args[0]);
+                case 'adminDeleteBank':
+                    return mockDelete('banks', args[0]);
+                case 'adminDeleteWallet':
+                    return mockDelete('wallets', args[0]);
+                case 'adminUpdateOrderStatus':
+                    return mockUpdateOrderStatus(args[0], args[1]);
+                default:
+                    return { error: 'Unknown function' };
+            }
+        }
+
+        function mockSave(collection, data) {
+            if (data.id) {
+                const idx = MOCK[collection].findIndex(item => String(item.id) === String(data.id));
+                if (idx >= 0) {
+                    MOCK[collection][idx] = { ...MOCK[collection][idx], ...data };
+                }
+            } else {
+                const newItem = { ...data, id: 'NEW' + Date.now(), createdAt: new Date().toISOString() };
+                MOCK[collection].push(newItem);
+            }
+            return { success: true };
+        }
+
+        function mockDelete(collection, id) {
+            const idx = MOCK[collection].findIndex(item => String(item.id) === String(id));
+            if (idx >= 0) {
+                MOCK[collection].splice(idx, 1);
+                return { success: true };
+            }
+            return { error: 'Not found' };
+        }
+
+        function mockUpdateOrderStatus(id, status) {
+            const idx = MOCK.orders.findIndex(o => String(o.id) === String(id));
+            if (idx >= 0) {
+                MOCK.orders[idx].status = status;
+                MOCK.orders[idx].updatedAt = new Date().toISOString();
+            }
+            return { success: true };
+        }
+
         // ===== STATE =====
-        const S = { page: 'dashboard', pwd: '', editId: null, cats: [], prods: [], banks: [], wallets: [], orders: [], stats: null };
+        const S = { page: 'dashboard', pwd: '', editId: null, cats: [], prods: [], banks: [], wallets: [], orders: [],
+            stats: null };
 
         // ===== LOGIN =====
         function doLogin() {
             const pwd = document.getElementById('login-pwd').value;
             S.pwd = pwd;
-            google.script.run.withSuccessHandler(ok => {
-                if (ok) {
+
+            if (isGAS) {
+                google.script.run.withSuccessHandler(ok => {
+                    if (ok) {
+                        document.getElementById('login-screen').classList.add('hidden');
+                        document.getElementById('app').classList.remove('hidden');
+                        loadPage('dashboard');
+                    } else {
+                        document.getElementById('login-err').style.display = 'block';
+                    }
+                }).adminAuth(pwd);
+            } else {
+                // Demo mode - accept 'admin1234' or empty
+                if (pwd === 'admin1234' || pwd === 'demo') {
                     document.getElementById('login-screen').classList.add('hidden');
                     document.getElementById('app').classList.remove('hidden');
                     loadPage('dashboard');
                 } else {
                     document.getElementById('login-err').style.display = 'block';
                 }
-            }).adminAuth(pwd);
+            }
         }
 
         document.getElementById('login-pwd').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
@@ -999,36 +1179,57 @@
         });
 
         const PAGE_TITLES = {
-            dashboard: '📊 Dashboard', categories: '🏷️ หมวดหมู่สินค้า',
-            products: '📦 สินค้า', banks: '🏦 ธนาคาร', wallets: '💳 True Wallet', orders: '🧾 ประวัติการขาย'
+            dashboard: '📊 Dashboard',
+            categories: '🏷️ หมวดหมู่สินค้า',
+            products: '📦 สินค้า',
+            banks: '🏦 ธนาคาร',
+            wallets: '💳 True Wallet',
+            orders: '🧾 ประวัติการขาย'
         };
-        const ADD_LABELS = { categories: '＋ เพิ่มหมวดหมู่', products: '＋ เพิ่มสินค้า', banks: '＋ เพิ่มธนาคาร', wallets: '＋ เพิ่ม True Wallet' };
+        const ADD_LABELS = { categories: '＋ เพิ่มหมวดหมู่', products: '＋ เพิ่มสินค้า', banks: '＋ เพิ่มธนาคาร',
+            wallets: '＋ เพิ่ม True Wallet' };
 
         function loadPage(page) {
-            S.page = page; S.editId = null;
-            document.querySelectorAll('.nav-item[data-page]').forEach(el => el.classList.toggle('active', el.dataset.page === page));
+            S.page = page;
+            S.editId = null;
+            document.querySelectorAll('.nav-item[data-page]').forEach(el => el.classList.toggle('active', el.dataset
+                .page === page));
             document.getElementById('page-title').textContent = PAGE_TITLES[page];
             const addBtn = document.getElementById('add-btn');
-            if (ADD_LABELS[page]) { addBtn.textContent = ADD_LABELS[page]; addBtn.classList.remove('hidden'); }
-            else addBtn.classList.add('hidden');
+            if (ADD_LABELS[page]) { addBtn.textContent = ADD_LABELS[page];
+                addBtn.classList.remove('hidden'); } else addBtn.classList.add('hidden');
             setContent('<div class="loading"><span class="spinner"></span>กำลังโหลด...</div>');
             switch (page) {
-                case 'dashboard': loadDashboard(); break;
-                case 'categories': loadCategories(); break;
-                case 'products': loadProducts(); break;
-                case 'banks': loadBanks(); break;
-                case 'wallets': loadWallets(); break;
-                case 'orders': loadOrders(); break;
+                case 'dashboard':
+                    loadDashboard();
+                    break;
+                case 'categories':
+                    loadCategories();
+                    break;
+                case 'products':
+                    loadProducts();
+                    break;
+                case 'banks':
+                    loadBanks();
+                    break;
+                case 'wallets':
+                    loadWallets();
+                    break;
+                case 'orders':
+                    loadOrders();
+                    break;
             }
         }
 
         function refreshPage() { loadPage(S.page); }
+
         function setContent(html) { document.getElementById('content').innerHTML = html; }
 
         // ===== DASHBOARD =====
         function loadDashboard() {
-            google.script.run.withSuccessHandler(stats => {
-                if (stats.error) { setContent('<div class="loading">❌ ' + stats.error + '</div>'); return; }
+            gasCall('adminGetStats', [S.pwd], stats => {
+                if (stats.error) { setContent('<div class="loading">❌ ' + stats.error +
+                    '</div>'); return; }
                 S.stats = stats;
                 const maxS = Math.max(...stats.salesChart.map(d => d.value), 1);
                 const maxT = Math.max(...stats.topupChart.map(d => d.value), 1);
@@ -1039,8 +1240,10 @@
         <span class="bar-label">${d.label}</span>
       </div>`).join('');
 
-                const pendingCnt = (S.orders || []).filter(o => o.status === 'รอชำระ' || o.status === 'รอตรวจสลิป').length;
-                if (pendingCnt > 0) { document.getElementById('pending-badge').textContent = pendingCnt; document.getElementById('pending-badge').style.display = ''; }
+                const pendingCnt = (stats._orders || []).filter(o => o.status === 'รอชำระ' || o.status ===
+                    'รอตรวจสลิป').length;
+                if (pendingCnt > 0) { document.getElementById('pending-badge').textContent = pendingCnt;
+                    document.getElementById('pending-badge').style.display = ''; }
 
                 setContent(`
     <div class="stat-grid">
@@ -1062,34 +1265,47 @@
     </div>
     <div class="card">
       <div class="card-header"><span class="card-title">🧾 รายการล่าสุด</span><button class="btn btn-secondary btn-sm" onclick="loadPage('orders')">ดูทั้งหมด →</button></div>
-      <div class="table-wrap">${orderTable(stats._orders || [])}</div>
+      <div class="table-wrap">${orderTable((stats._orders || []).slice(0, 10))}</div>
     </div>`);
-            }).adminGetStats(S.pwd);
+            });
 
             // Load orders for dashboard
-            google.script.run.withSuccessHandler(orders => {
+            gasCall('adminGetOrders', [S.pwd], orders => {
                 if (!orders || orders.error) return;
                 S.orders = orders;
-                // update pending badge
-                const pendingCnt = orders.filter(o => o.status === 'รอชำระ' || o.status === 'รอตรวจสลิป').length;
-                if (pendingCnt > 0) { document.getElementById('pending-badge').textContent = pendingCnt; document.getElementById('pending-badge').style.display = ''; }
-                // inject recent orders into dashboard if it exists
+                const pendingCnt = orders.filter(o => o.status === 'รอชำระ' || o.status === 'รอตรวจสลิป')
+                    .length;
+                if (pendingCnt > 0) { document.getElementById('pending-badge').textContent = pendingCnt;
+                    document.getElementById('pending-badge').style.display = ''; }
                 const c = document.querySelector('.card .table-wrap');
                 if (c) c.innerHTML = orderTable(orders.slice(0, 10));
-            }).adminGetOrders(S.pwd);
+            });
         }
 
         // ===== CATEGORIES =====
         function loadCategories() {
-            google.script.run.withSuccessHandler(data => {
+            gasCall('adminGetCategories', [], data => {
                 S.cats = data || [];
-                if (!S.cats.length) { setContent('<div class="loading">ยังไม่มีหมวดหมู่ กด "+ เพิ่มหมวดหมู่" เพื่อเริ่มต้นครับ</div>'); return; }
-                setContent('<div class="item-list">' + S.cats.map(c => `
+                if (!S.cats.length) {
+                    setContent(
+                        '<div class="loading">ยังไม่มีหมวดหมู่ กด "+ เพิ่มหมวดหมู่" เพื่อเริ่มต้นครับ</div>');
+                    return;
+                }
+                // Load products for count
+                gasCall('adminGetProducts', [], prods => {
+                    S.prods = prods || [];
+                    renderCategories();
+                });
+            });
+        }
+
+        function renderCategories() {
+            setContent('<div class="item-list">' + S.cats.map(c => `
       <div class="item-row">
         <div class="item-thumb">${c.img ? `<img src="${c.img}" onerror="this.style.display='none'">` : '🏷️'}</div>
         <div class="item-info">
           <div class="item-name">${escHtml(c.name)}</div>
-          <div class="item-detail">คีย์เวิร์ด: ${escHtml(String(c.keyword))} · สินค้า: ${S.prods.filter?.(p => String(p.catId) === String(c.id)).length || '?'} รายการ</div>
+          <div class="item-detail">คีย์เวิร์ด: ${escHtml(String(c.keyword))} · สินค้า: ${S.prods.filter(p => String(p.catId) === String(c.id)).length} รายการ</div>
         </div>
         <span class="badge ${c.active === 'true' || c.active === true ? 'badge-success' : 'badge-danger'}">${c.active === 'true' || c.active === true ? 'เปิด' : 'ปิด'}</span>
         <div class="item-actions">
@@ -1098,21 +1314,29 @@
           <button class="icon-btn del" onclick="deleteItem('cat','${c.id}','${escHtml(c.name)}')">🗑️</button>
         </div>
       </div>`).join('') + '</div>');
-            }).adminGetCategories();
-            google.script.run.withSuccessHandler(d => { S.prods = d || [] }).adminGetProducts();
         }
 
         // ===== PRODUCTS =====
         function loadProducts() {
-            google.script.run.withSuccessHandler(prods => {
+            gasCall('adminGetProducts', [], prods => {
                 S.prods = prods || [];
-                google.script.run.withSuccessHandler(cats => {
+                gasCall('adminGetCategories', [], cats => {
                     S.cats = cats || [];
-                    if (!S.prods.length) { setContent('<div class="loading">ยังไม่มีสินค้า กด "+ เพิ่มสินค้า" เพื่อเริ่มต้นครับ</div>'); return; }
-                    setContent('<div class="item-list">' + S.prods.map(p => {
-                        const cat = S.cats.find(c => String(c.id) === String(p.catId));
-                        const price = p.discountPrice > 0 ? p.discountPrice : p.price;
-                        return `<div class="item-row">
+                    if (!S.prods.length) {
+                        setContent(
+                            '<div class="loading">ยังไม่มีสินค้า กด "+ เพิ่มสินค้า" เพื่อเริ่มต้นครับ</div>');
+                        return;
+                    }
+                    renderProducts();
+                });
+            });
+        }
+
+        function renderProducts() {
+            setContent('<div class="item-list">' + S.prods.map(p => {
+                const cat = S.cats.find(c => String(c.id) === String(p.catId));
+                const price = p.discountPrice > 0 ? p.discountPrice : p.price;
+                return `<div class="item-row">
           <div class="item-thumb">${p.img ? `<img src="${p.img}" onerror="this.style.display='none'">` : '📦'}</div>
           <div class="item-info">
             <div class="item-name">${escHtml(p.name)} <span class="badge badge-info" style="font-size:10px">${cat ? escHtml(cat.name) : '-'}</span></div>
@@ -1125,16 +1349,15 @@
             <button class="icon-btn del" onclick="deleteItem('prod','${p.id}','${escHtml(p.name)}')">🗑️</button>
           </div>
         </div>`;
-                    }).join('') + '</div>');
-                }).adminGetCategories();
-            }).adminGetProducts();
+            }).join('') + '</div>');
         }
 
         // ===== BANKS =====
         function loadBanks() {
-            google.script.run.withSuccessHandler(data => {
+            gasCall('adminGetBanks', [], data => {
                 S.banks = data || [];
-                if (!S.banks.length) { setContent('<div class="loading">ยังไม่มีช่องทางธนาคาร</div>'); return; }
+                if (!S.banks.length) { setContent(
+                    '<div class="loading">ยังไม่มีช่องทางธนาคาร</div>'); return; }
                 setContent('<div class="item-list">' + S.banks.map(b => `
       <div class="item-row">
         <div class="item-thumb">🏦</div>
@@ -1149,14 +1372,15 @@
           <button class="icon-btn del" onclick="deleteItem('bank','${b.id}','${escHtml(b.bankName)}')">🗑️</button>
         </div>
       </div>`).join('') + '</div>');
-            }).adminGetBanks();
+            });
         }
 
         // ===== WALLETS =====
         function loadWallets() {
-            google.script.run.withSuccessHandler(data => {
+            gasCall('adminGetWallets', [], data => {
                 S.wallets = data || [];
-                if (!S.wallets.length) { setContent('<div class="loading">ยังไม่มีช่องทาง True Wallet</div>'); return; }
+                if (!S.wallets.length) { setContent(
+                    '<div class="loading">ยังไม่มีช่องทาง True Wallet</div>'); return; }
                 setContent('<div class="item-list">' + S.wallets.map(w => `
       <div class="item-row">
         <div class="item-thumb">💳</div>
@@ -1171,27 +1395,30 @@
           <button class="icon-btn del" onclick="deleteItem('wallet','${w.id}','${escHtml(w.accountName)}')">🗑️</button>
         </div>
       </div>`).join('') + '</div>');
-            }).adminGetWallets();
+            });
         }
 
         // ===== ORDERS =====
         function loadOrders() {
-            google.script.run.withSuccessHandler(data => {
+            gasCall('adminGetOrders', [S.pwd], data => {
                 S.orders = data || [];
-                const pendingCnt = S.orders.filter(o => o.status === 'รอชำระ' || o.status === 'รอตรวจสลิป').length;
-                if (pendingCnt > 0) { document.getElementById('pending-badge').textContent = pendingCnt; document.getElementById('pending-badge').style.display = ''; }
-                else document.getElementById('pending-badge').style.display = 'none';
+                const pendingCnt = S.orders.filter(o => o.status === 'รอชำระ' || o.status === 'รอตรวจสลิป')
+                    .length;
+                if (pendingCnt > 0) { document.getElementById('pending-badge').textContent = pendingCnt;
+                    document.getElementById('pending-badge').style.display = ''; } else document.getElementById(
+                    'pending-badge').style.display = 'none';
 
-                // Filter tabs
                 const tabs = ['ทั้งหมด', 'รอชำระ', 'รอตรวจสลิป', 'สำเร็จ', 'ยกเลิก'];
                 let activeTab = 'ทั้งหมด';
                 const renderOrders = (tab) => {
                     activeTab = tab;
-                    const filtered = tab === 'ทั้งหมด' ? S.orders : S.orders.filter(o => o.status === tab);
-                    document.getElementById('order-table-wrap').innerHTML = filtered.length
-                        ? `<div class="table-wrap">${orderTable(filtered, true)}</div>`
-                        : '<div class="loading" style="padding:30px">ไม่มีรายการ</div>';
-                    document.querySelectorAll('.order-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+                    const filtered = tab === 'ทั้งหมด' ? S.orders : S.orders.filter(o => o.status ===
+                        tab);
+                    document.getElementById('order-table-wrap').innerHTML = filtered.length ?
+                        `<div class="table-wrap">${orderTable(filtered, true)}</div>` :
+                        '<div class="loading" style="padding:30px">ไม่มีรายการ</div>';
+                    document.querySelectorAll('.order-tab').forEach(t => t.classList.toggle('active', t
+                        .dataset.tab === tab));
                 };
 
                 setContent(`
@@ -1200,14 +1427,16 @@
       </div>
       <div id="order-table-wrap"></div>`);
 
-                document.querySelectorAll('.order-tab').forEach(t => t.addEventListener('click', () => renderOrders(t.dataset.tab)));
+                document.querySelectorAll('.order-tab').forEach(t => t.addEventListener('click', () =>
+                    renderOrders(t.dataset.tab)));
                 renderOrders('ทั้งหมด');
-            }).adminGetOrders(S.pwd);
+            });
         }
 
         function orderTable(data, showActions) {
             if (!data || !data.length) return '<div class="loading" style="padding:20px">ไม่มีรายการ</div>';
-            const statusBadge = s => s === 'สำเร็จ' ? 'badge-success' : s === 'รอชำระ' ? 'badge-warning' : s === 'รอตรวจสลิป' ? 'badge-info' : 'badge-danger';
+            const statusBadge = s => s === 'สำเร็จ' ? 'badge-success' : s === 'รอชำระ' ? 'badge-warning' : s ===
+                'รอตรวจสลิป' ? 'badge-info' : 'badge-danger';
             return `<table>
     <tr><th>ออเดอร์</th><th>ลูกค้า</th><th>สินค้า</th><th>ยอด</th><th>สถานะ</th><th>วันที่</th>${showActions ? '<th>จัดการ</th>' : ''}</tr>
     ${data.map(o => `<tr>
@@ -1230,33 +1459,35 @@
         }
 
         function updateOrderStatus(id, status) {
-            google.script.run.withSuccessHandler(r => {
+            gasCall('adminUpdateOrderStatus', [id, status, S.pwd], r => {
                 if (r.error) { showToast('❌ เกิดข้อผิดพลาด', 'error'); return; }
                 showToast('✅ อัปเดตสถานะแล้ว', 'success');
                 loadOrders();
-            }).adminUpdateOrderStatus(id, status, S.pwd);
+            });
         }
 
         // ===== TOGGLE =====
         function toggleActive(type, id, val) {
-            const map = { cat: { get: S.cats, save: 'adminSaveCategory', field: 'cats' }, prod: { get: S.prods, save: 'adminSaveProduct', field: 'prods' }, bank: { get: S.banks, save: 'adminSaveBank', field: 'banks' }, wallet: { get: S.wallets, save: 'adminSaveWallet', field: 'wallets' } };
-            const m = map[type];
-            const src = { cat: S.cats, prod: S.prods, bank: S.banks, wallet: S.wallets }[type];
+            const src = { cat: S.cats, prod: S.prods, bank: S.banks, wallet: S.wallets } [type];
             const item = src.find(i => String(i.id) === String(id));
             if (!item) return;
             item.active = String(val);
-            google.script.run.withSuccessHandler(r => {
+            const fnMap = { cat: 'adminSaveCategory', prod: 'adminSaveProduct', bank: 'adminSaveBank',
+                wallet: 'adminSaveWallet' };
+            gasCall(fnMap[type], [item, S.pwd], r => {
                 if (r.error) { showToast('❌ เกิดข้อผิดพลาด', 'error'); return; }
                 showToast('✅ อัปเดตแล้ว', 'success');
-            })[m.save](item, S.pwd);
+            });
         }
 
         // ===== MODAL =====
-        function openAddModal() { S.editId = null; buildModal(); }
+        function openAddModal() { S.editId = null;
+            buildModal(); }
 
         function openEditModal(type, id) {
             S.editId = id;
-            const src = { cat: S.cats, prod: S.prods, bank: S.banks, wallet: S.wallets }[{ categories: 'cat', products: 'prod', banks: 'bank', wallets: 'wallet' }[S.page] || type];
+            const src = { cat: S.cats, prod: S.prods, bank: S.banks, wallet: S.wallets } [{ categories: 'cat',
+                products: 'prod', banks: 'bank', wallets: 'wallet' } [S.page] || type];
             buildModal(src?.find(i => String(i.id) === String(id)));
         }
 
@@ -1289,7 +1520,9 @@
     </div>`;
             }
             if (S.page === 'products') {
-                const catOpts = S.cats.map(c => `<option value="${c.id}" ${String(d.catId) === String(c.id) ? 'selected' : ''}>${escHtml(c.name)}</option>`).join('');
+                const catOpts = S.cats.map(c =>
+                    `<option value="${c.id}" ${String(d.catId) === String(c.id) ? 'selected' : ''}>${escHtml(c.name)}</option>`
+                    ).join('');
                 return `<div class="form-grid">
       <div class="form-group full"><label class="form-label">ชื่อสินค้า *</label><input class="form-input" id="f-name" value="${escHtml(d.name || '')}" placeholder="ชื่อสินค้า"></div>
       <div class="form-group full">
@@ -1352,27 +1585,35 @@
 
         function saveModal() {
             const get = id => { const el = document.getElementById(id); return el ? el.value : ''; };
-            const getChk = id => { const el = document.getElementById(id); return el ? String(el.checked) : 'true'; };
+            const getChk = id => { const el = document.getElementById(id); return el ? String(el.checked) :
+                'true'; };
             let data = { id: S.editId || '' };
 
             if (S.page === 'categories') {
                 if (!get('f-name').trim()) { showToast('❌ กรุณาใส่ชื่อหมวดหมู่', 'error'); return; }
                 if (!get('f-keyword').trim()) { showToast('❌ กรุณาใส่คีย์เวิร์ด', 'error'); return; }
-                Object.assign(data, { name: get('f-name'), img: get('f-img'), keyword: get('f-keyword'), active: getChk('f-active') });
-                google.script.run.withSuccessHandler(onSaveSuccess).adminSaveCategory(data, S.pwd);
+                Object.assign(data, { name: get('f-name'), img: get('f-img'), keyword: get('f-keyword'),
+                    active: getChk('f-active') });
+                gasCall('adminSaveCategory', [data, S.pwd], onSaveSuccess);
             } else if (S.page === 'products') {
                 if (!get('f-name').trim()) { showToast('❌ กรุณาใส่ชื่อสินค้า', 'error'); return; }
                 if (!get('f-catId')) { showToast('❌ กรุณาเลือกหมวดหมู่', 'error'); return; }
-                Object.assign(data, { name: get('f-name'), img: get('f-img'), desc: get('f-desc'), price: Number(get('f-price')) || 0, discountPrice: Number(get('f-discountPrice')) || 0, catId: get('f-catId'), active: getChk('f-active') });
-                google.script.run.withSuccessHandler(onSaveSuccess).adminSaveProduct(data, S.pwd);
+                Object.assign(data, { name: get('f-name'), img: get('f-img'), desc: get('f-desc'), price: Number(
+                        get('f-price')) || 0, discountPrice: Number(get('f-discountPrice')) || 0, catId: get(
+                        'f-catId'), active: getChk('f-active') });
+                gasCall('adminSaveProduct', [data, S.pwd], onSaveSuccess);
             } else if (S.page === 'banks') {
-                if (!get('f-accountName').trim() || !get('f-bankName').trim() || !get('f-accountNumber').trim()) { showToast('❌ กรุณากรอกข้อมูลให้ครบ', 'error'); return; }
-                Object.assign(data, { accountName: get('f-accountName'), bankName: get('f-bankName'), accountNumber: get('f-accountNumber'), img: get('f-img'), active: getChk('f-active') });
-                google.script.run.withSuccessHandler(onSaveSuccess).adminSaveBank(data, S.pwd);
+                if (!get('f-accountName').trim() || !get('f-bankName').trim() || !get('f-accountNumber').trim()) {
+                    showToast('❌ กรุณากรอกข้อมูลให้ครบ', 'error'); return; }
+                Object.assign(data, { accountName: get('f-accountName'), bankName: get('f-bankName'),
+                    accountNumber: get('f-accountNumber'), img: get('f-img'), active: getChk('f-active') });
+                gasCall('adminSaveBank', [data, S.pwd], onSaveSuccess);
             } else if (S.page === 'wallets') {
-                if (!get('f-accountName').trim() || !get('f-accountNumber').trim()) { showToast('❌ กรุณากรอกข้อมูลให้ครบ', 'error'); return; }
-                Object.assign(data, { accountName: get('f-accountName'), accountNumber: get('f-accountNumber'), img: get('f-img'), active: getChk('f-active') });
-                google.script.run.withSuccessHandler(onSaveSuccess).adminSaveWallet(data, S.pwd);
+                if (!get('f-accountName').trim() || !get('f-accountNumber').trim()) { showToast(
+                        '❌ กรุณากรอกข้อมูลให้ครบ', 'error'); return; }
+                Object.assign(data, { accountName: get('f-accountName'), accountNumber: get('f-accountNumber'),
+                    img: get('f-img'), active: getChk('f-active') });
+                gasCall('adminSaveWallet', [data, S.pwd], onSaveSuccess);
             }
         }
 
@@ -1391,22 +1632,25 @@
         // ===== DELETE =====
         function deleteItem(type, id, name) {
             if (!confirm(`ต้องการลบ "${name}" ใช่ไหม?`)) return;
-            const fnMap = { cat: 'adminDeleteCategory', prod: 'adminDeleteProduct', bank: 'adminDeleteBank', wallet: 'adminDeleteWallet' };
-            google.script.run.withSuccessHandler(r => {
+            const fnMap = { cat: 'adminDeleteCategory', prod: 'adminDeleteProduct', bank: 'adminDeleteBank',
+                wallet: 'adminDeleteWallet' };
+            gasCall(fnMap[type], [id, S.pwd], r => {
                 if (r && r.error) { showToast('❌ ' + r.error, 'error'); return; }
                 showToast('✅ ลบสำเร็จ', 'success');
                 loadPage(S.page);
-            })[fnMap[type]](id, S.pwd);
+            });
         }
 
         // ===== HELPERS =====
         function updateImgPreview(previewId, url) {
             const el = document.getElementById(previewId);
             if (!el) return;
-            el.innerHTML = url ? `<img src="${url}" onerror="this.parentNode.innerHTML='URL ไม่ถูกต้อง'">` : 'ใส่ URL เพื่อดูตัวอย่าง';
+            el.innerHTML = url ? `<img src="${url}" onerror="this.parentNode.innerHTML='URL ไม่ถูกต้อง'">` :
+                'ใส่ URL เพื่อดูตัวอย่าง';
         }
 
-        function escHtml(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+        function escHtml(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;'); }
 
         function showToast(msg, type = 'success') {
             const t = document.getElementById('toast');
@@ -1417,7 +1661,7 @@
         }
 
         // Close modal on overlay click
-        document.getElementById('modal').addEventListener('click', function (e) { if (e.target === this) closeModal(); });
+        document.getElementById('modal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
 
         // Init
         document.getElementById('login-pwd').focus();
