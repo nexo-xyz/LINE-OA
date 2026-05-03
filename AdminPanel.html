@@ -40,7 +40,6 @@
             min-height: 100vh
         }
 
-        /* LOGIN */
         #login-screen {
             position: fixed;
             inset: 0;
@@ -77,7 +76,6 @@
             margin-bottom: 28px
         }
 
-        /* LAYOUT */
         .app {
             display: flex;
             height: 100vh;
@@ -212,7 +210,6 @@
             background: var(--bg)
         }
 
-        /* BUTTONS */
         .btn {
             padding: 8px 16px;
             border-radius: 8px;
@@ -272,7 +269,6 @@
             font-size: 12px
         }
 
-        /* TOGGLE */
         .toggle-wrap {
             display: flex;
             align-items: center;
@@ -322,7 +318,6 @@
             transform: translateX(18px)
         }
 
-        /* STATS */
         .stat-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
@@ -413,7 +408,6 @@
             color: var(--text3)
         }
 
-        /* CHARTS */
         .grid-2 {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -480,7 +474,6 @@
             background: linear-gradient(180deg, var(--purple) 0%, #4f46e5 100%)
         }
 
-        /* TABLE */
         .table-wrap {
             overflow-x: auto;
             border-radius: var(--r)
@@ -520,7 +513,6 @@
             background: rgba(255, 255, 255, .02)
         }
 
-        /* BADGE */
         .badge {
             display: inline-flex;
             align-items: center;
@@ -556,7 +548,6 @@
             color: var(--purple)
         }
 
-        /* FORM */
         .form-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -629,7 +620,6 @@
             object-fit: cover
         }
 
-        /* MODAL */
         .modal-overlay {
             position: fixed;
             inset: 0;
@@ -691,7 +681,6 @@
             border-top: 1px solid var(--border)
         }
 
-        /* ITEM LIST */
         .item-list {
             display: grid;
             gap: 10px
@@ -784,7 +773,6 @@
             color: #ef4444
         }
 
-        /* TABS */
         .tabs {
             display: flex;
             border-bottom: 1px solid var(--border);
@@ -811,7 +799,6 @@
             color: var(--text2)
         }
 
-        /* TOAST */
         .toast {
             position: fixed;
             bottom: 24px;
@@ -842,7 +829,6 @@
             color: var(--red)
         }
 
-        /* ORDER STATUS */
         .status-select {
             background: var(--bg3);
             border: 1px solid var(--border);
@@ -854,7 +840,6 @@
             cursor: pointer
         }
 
-        /* LOADING */
         .loading {
             text-align: center;
             padding: 40px;
@@ -880,12 +865,10 @@
             }
         }
 
-        /* HIDDEN */
         .hidden {
             display: none !important
         }
 
-        /* RESPONSIVE */
         @media (max-width: 1024px) {
             .stat-grid {
                 grid-template-columns: repeat(3, 1fr);
@@ -995,11 +978,34 @@
     <div class="toast" id="toast"></div>
 
     <script>
-        // ===== ENVIRONMENT DETECTION =====
-        const isGAS = typeof google !== 'undefined' && google.script && google.script.run;
-        document.getElementById('env-hint').textContent = isGAS ? 'Environment: Google Apps Script ✅' : 'Environment: Demo Mode (Mock Data) ⚠️';
+        // ===== CONFIGURATION =====
+        // เปลี่ยน URL นี้เป็น Web App URL ของคุณหลังจาก Deploy
+        const GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyQ6zqqaPrMRVRLuYOTbSSPvK_lmGW5B1eeSD-OnuUTgb3qEZIzg8GJ02biM7VSsvzUyg/exec';
 
-        // ===== MOCK DATA (for demo/testing on GitHub Pages) =====
+        // ตรวจสอบว่าเราเชื่อมต่อกับ GAS จริงหรือไม่
+        let isGAS = false;
+
+        // ทดสอบการเชื่อมต่อกับ GAS
+        async function checkGASConnection() {
+            try {
+                const res = await fetch(GAS_WEBAPP_URL + '?page=status');
+                const data = await res.json();
+                if (data.status === 'ok') {
+                    isGAS = true;
+                    document.getElementById('env-hint').textContent = 'Environment: Google Apps Script ✅ (Connected)';
+                    return true;
+                }
+            } catch (e) {
+                console.log('GAS connection failed, using demo mode:', e.message);
+            }
+            document.getElementById('env-hint').textContent = 'Environment: Demo Mode (Mock Data) ⚠️';
+            return false;
+        }
+
+        // เรียกตรวจสอบตอนเริ่ม
+        checkGASConnection();
+
+        // ===== MOCK DATA (fallback) =====
         const MOCK = {
             stats: {
                 todaySales: 12500,
@@ -1029,40 +1035,32 @@
                 ],
                 _orders: []
             },
-            cats: [
-                { id: 'CAT001', name: 'เครื่องดื่ม', img: 'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=300&h=200&fit=crop', keyword: 'drink,เครื่องดื่ม,น้ำ', active: 'true', createdAt: '2026-05-01T00:00:00.000Z' },
-                { id: 'CAT002', name: 'บัตรเติมเกม', img: 'https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=300&h=200&fit=crop', keyword: 'game,เกม,เติมเกม', active: 'true', createdAt: '2026-05-01T00:00:00.000Z' },
-                { id: 'CAT003', name: 'สติกเกอร์', img: 'https://images.unsplash.com/photo-1572375992501-4b0892d50c69?w=300&h=200&fit=crop', keyword: 'sticker,สติกเกอร์,line', active: 'true', createdAt: '2026-05-01T00:00:00.000Z' }
-            ],
-            prods: [
-                { id: 'PRD001', name: 'ชาเขียวมัทฉะ', img: 'https://images.unsplash.com/photo-1558857563-b371033873b8?w=300&h=200&fit=crop', desc: 'ชาเขียวมัทฉะแท้จากญี่ปุ่น หอมละมุน', price: 65, discountPrice: 55, catId: 'CAT001', active: 'true', createdAt: '2026-05-01T00:00:00.000Z' },
-                { id: 'PRD002', name: 'กาแฟอเมริกาโน่', img: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=300&h=200&fit=crop', desc: 'กาแฟดำเข้มข้น สดชื่นทุกแก้ว', price: 50, discountPrice: 0, catId: 'CAT001', active: 'true', createdAt: '2026-05-01T00:00:00.000Z' },
-                { id: 'PRD003', name: 'บัตรเติม ROV 100 บาท', img: 'https://images.unsplash.com/photo-1612287230202-1ff1d85d1bdf?w=300&h=200&fit=crop', desc: 'เติมเงินเกม ROV 100 บาท ทันใจ', price: 100, discountPrice: 90, catId: 'CAT002', active: 'true', createdAt: '2026-05-01T00:00:00.000Z' },
-                { id: 'PRD004', name: 'สติกเกอร์ LINE คิ้วท์ๆ', img: 'https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=300&h=200&fit=crop', desc: 'สติกเกอร์น่ารัก ส่งให้เพื่อนได้เลย', price: 35, discountPrice: 0, catId: 'CAT003', active: 'true', createdAt: '2026-05-01T00:00:00.000Z' }
-            ],
-            banks: [
-                { id: 'BNK001', accountName: 'สมชาย ใจดี', accountNumber: '123-4-56789-0', bankName: 'ไทยพาณิชย์', img: '', active: 'true', createdAt: '2026-05-01T00:00:00.000Z' },
-                { id: 'BNK002', accountName: 'สมชาย ใจดี', accountNumber: '987-6-54321-0', bankName: 'กสิกรไทย', img: '', active: 'true', createdAt: '2026-05-01T00:00:00.000Z' }
-            ],
-            wallets: [
-                { id: 'WAL001', accountName: 'สมชาย', accountNumber: '089-123-4567', img: '', active: 'true', createdAt: '2026-05-01T00:00:00.000Z' }
-            ],
-            orders: [
-                { id: 'ORD1764683592000', userId: 'U123', displayName: 'ลูกค้า ทดสอบ', productId: 'PRD001', productName: 'ชาเขียวมัทฉะ', qty: 1, unitPrice: 55, totalPrice: 55, status: 'สำเร็จ', paymentMethod: 'bank', slipUrl: '', createdAt: '2026-05-03T10:30:00.000Z', updatedAt: '2026-05-03T10:35:00.000Z' },
-                { id: 'ORD1764683599000', userId: 'U456', displayName: 'คุณ ประหยัด', productId: 'PRD003', productName: 'บัตรเติม ROV 100 บาท', qty: 2, unitPrice: 90, totalPrice: 180, status: 'รอตรวจสลิป', paymentMethod: 'bank', slipUrl: 'MSG123', createdAt: '2026-05-03T11:00:00.000Z', updatedAt: '2026-05-03T11:05:00.000Z' },
-                { id: 'ORD1764683605000', userId: 'U789', displayName: 'น้อง มัธยม', productId: 'PRD004', productName: 'สติกเกอร์ LINE คิ้วท์ๆ', qty: 1, unitPrice: 35, totalPrice: 35, status: 'รอชำระ', paymentMethod: '', slipUrl: '', createdAt: '2026-05-03T11:30:00.000Z', updatedAt: '2026-05-03T11:30:00.000Z' }
-            ]
+            cats: [],
+            prods: [],
+            banks: [],
+            wallets: [],
+            orders: []
         };
 
-        MOCK.stats._orders = MOCK.orders;
-
         // ===== GAS CALL WRAPPER =====
-        function gasCall(fnName, args, onSuccess) {
+        async function gasCall(fnName, args, onSuccess) {
             if (isGAS) {
-                // Real GAS call
-                google.script.run.withSuccessHandler(onSuccess)[fnName](...args);
+                // เรียก GAS Web App จริง
+                try {
+                    const res = await fetch(GAS_WEBAPP_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: fnName, args: args }),
+                        redirect: 'follow'
+                    });
+                    const data = await res.json();
+                    onSuccess(data);
+                } catch (err) {
+                    console.error('GAS call error:', err);
+                    onSuccess({ error: err.message });
+                }
             } else {
-                // Mock call - simulate async response
+                // Mock call
                 console.log(`[Mock] Calling ${fnName} with args:`, args);
                 setTimeout(() => {
                     const result = mockGetData(fnName, args);
@@ -1078,7 +1076,7 @@
         function mockGetData(fnName, args) {
             switch (fnName) {
                 case 'adminGetStats':
-                    return { ...MOCK.stats };
+                    return { ...MOCK.stats, _orders: MOCK.orders };
                 case 'adminGetCategories':
                     return [...MOCK.cats];
                 case 'adminGetProducts':
@@ -1108,7 +1106,7 @@
                 case 'adminUpdateOrderStatus':
                     return mockUpdateOrderStatus(args[0], args[1]);
                 default:
-                    return { error: 'Unknown function' };
+                    return { error: 'Unknown function: ' + fnName };
             }
         }
 
@@ -1145,27 +1143,29 @@
 
         // ===== STATE =====
         const S = {
-            page: 'dashboard', pwd: '', editId: null, cats: [], prods: [], banks: [], wallets: [], orders: [],
+            page: 'dashboard', pwd: 'admin1234', editId: null,
+            cats: [], prods: [], banks: [], wallets: [], orders: [],
             stats: null
         };
 
         // ===== LOGIN =====
-        function doLogin() {
+        async function doLogin() {
             const pwd = document.getElementById('login-pwd').value;
             S.pwd = pwd;
 
             if (isGAS) {
-                google.script.run.withSuccessHandler(ok => {
-                    if (ok) {
+                // ตรวจสอบรหัสผ่านผ่าน API
+                gasCall('adminAuth', [pwd], (ok) => {
+                    if (ok === true || (ok && ok.success)) {
                         document.getElementById('login-screen').classList.add('hidden');
                         document.getElementById('app').classList.remove('hidden');
                         loadPage('dashboard');
                     } else {
                         document.getElementById('login-err').style.display = 'block';
                     }
-                }).adminAuth(pwd);
+                });
             } else {
-                // Demo mode - accept 'admin1234' or empty
+                // Demo mode
                 if (pwd === 'admin1234' || pwd === 'demo') {
                     document.getElementById('login-screen').classList.add('hidden');
                     document.getElementById('app').classList.remove('hidden');
@@ -1244,16 +1244,17 @@
                         '</div>'); return;
                 }
                 S.stats = stats;
-                const maxS = Math.max(...stats.salesChart.map(d => d.value), 1);
-                const maxT = Math.max(...stats.topupChart.map(d => d.value), 1);
-                const bars = (data, cls, max) => data.map(d => `
+                const maxS = Math.max(...(stats.salesChart || []).map(d => d.value), 1);
+                const maxT = Math.max(...(stats.topupChart || []).map(d => d.value), 1);
+                const bars = (data, cls, max) => (data || []).map(d => `
       <div class="bar-col">
         <span class="bar-val">฿${d.value > 0 ? d.value.toLocaleString() : ''}</span>
         <div class="bar bar-${cls}" style="height:${Math.max(Math.round(d.value / max * 90), d.value > 0 ? 4 : 2)}px"></div>
         <span class="bar-label">${d.label}</span>
       </div>`).join('');
 
-                const pendingCnt = (stats._orders || []).filter(o => o.status === 'รอชำระ' || o.status ===
+                const orders = stats._orders || [];
+                const pendingCnt = orders.filter(o => o.status === 'รอชำระ' || o.status ===
                     'รอตรวจสลิป').length;
                 if (pendingCnt > 0) {
                     document.getElementById('pending-badge').textContent = pendingCnt;
@@ -1262,40 +1263,26 @@
 
                 setContent(`
     <div class="stat-grid">
-      <div class="stat-card sc-gold"><div class="stat-icon">💰</div><div class="stat-label">รายได้วันนี้</div><div class="stat-val sv-gold">฿${stats.todaySales.toLocaleString()}</div><div class="stat-sub">สำเร็จแล้ว</div></div>
-      <div class="stat-card sc-purple"><div class="stat-icon">📅</div><div class="stat-label">รายได้เดือนนี้</div><div class="stat-val sv-purple">฿${stats.monthSales.toLocaleString()}</div><div class="stat-sub">฿${stats.totalSales.toLocaleString()} รวมทั้งหมด</div></div>
-      <div class="stat-card sc-blue"><div class="stat-icon">👥</div><div class="stat-label">ผู้ใช้งานทั้งหมด</div><div class="stat-val sv-blue">${stats.totalUsers.toLocaleString()}</div><div class="stat-sub">LINE Followers</div></div>
-      <div class="stat-card sc-green"><div class="stat-icon">🔼</div><div class="stat-label">เติมเงินวันนี้</div><div class="stat-val sv-green">฿${stats.todayTopup.toLocaleString()}</div><div class="stat-sub">สำเร็จแล้ว</div></div>
-      <div class="stat-card sc-orange"><div class="stat-icon">📆</div><div class="stat-label">เติมเงินเดือนนี้</div><div class="stat-val sv-orange">฿${stats.monthTopup.toLocaleString()}</div><div class="stat-sub">฿${stats.totalTopup.toLocaleString()} รวมทั้งหมด</div></div>
+      <div class="stat-card sc-gold"><div class="stat-icon">💰</div><div class="stat-label">รายได้วันนี้</div><div class="stat-val sv-gold">฿${(stats.todaySales || 0).toLocaleString()}</div><div class="stat-sub">สำเร็จแล้ว</div></div>
+      <div class="stat-card sc-purple"><div class="stat-icon">📅</div><div class="stat-label">รายได้เดือนนี้</div><div class="stat-val sv-purple">฿${(stats.monthSales || 0).toLocaleString()}</div><div class="stat-sub">฿${(stats.totalSales || 0).toLocaleString()} รวมทั้งหมด</div></div>
+      <div class="stat-card sc-blue"><div class="stat-icon">👥</div><div class="stat-label">ผู้ใช้งานทั้งหมด</div><div class="stat-val sv-blue">${(stats.totalUsers || 0).toLocaleString()}</div><div class="stat-sub">LINE Followers</div></div>
+      <div class="stat-card sc-green"><div class="stat-icon">🔼</div><div class="stat-label">เติมเงินวันนี้</div><div class="stat-val sv-green">฿${(stats.todayTopup || 0).toLocaleString()}</div><div class="stat-sub">สำเร็จแล้ว</div></div>
+      <div class="stat-card sc-orange"><div class="stat-icon">📆</div><div class="stat-label">เติมเงินเดือนนี้</div><div class="stat-val sv-orange">฿${(stats.monthTopup || 0).toLocaleString()}</div><div class="stat-sub">฿${(stats.totalTopup || 0).toLocaleString()} รวมทั้งหมด</div></div>
     </div>
     <div class="grid-2">
       <div class="card">
-        <div class="card-header"><span class="card-title">📈 ยอดขายรายวัน (7 วันล่าสุด)</span><span class="badge badge-warning">฿${stats.totalSales.toLocaleString()}</span></div>
+        <div class="card-header"><span class="card-title">📈 ยอดขายรายวัน (7 วันล่าสุด)</span><span class="badge badge-warning">฿${(stats.totalSales || 0).toLocaleString()}</span></div>
         <div class="bar-chart">${bars(stats.salesChart, 'sales', maxS)}</div>
       </div>
       <div class="card">
-        <div class="card-header"><span class="card-title">💜 รายรับเติมเงินรายวัน</span><span class="badge badge-purple">฿${stats.totalTopup.toLocaleString()}</span></div>
+        <div class="card-header"><span class="card-title">💜 รายรับเติมเงินรายวัน</span><span class="badge badge-purple">฿${(stats.totalTopup || 0).toLocaleString()}</span></div>
         <div class="bar-chart">${bars(stats.topupChart, 'topup', maxT)}</div>
       </div>
     </div>
     <div class="card">
       <div class="card-header"><span class="card-title">🧾 รายการล่าสุด</span><button class="btn btn-secondary btn-sm" onclick="loadPage('orders')">ดูทั้งหมด →</button></div>
-      <div class="table-wrap">${orderTable((stats._orders || []).slice(0, 10))}</div>
+      <div class="table-wrap">${orderTable(orders.slice(0, 10))}</div>
     </div>`);
-            });
-
-            // Load orders for dashboard
-            gasCall('adminGetOrders', [S.pwd], orders => {
-                if (!orders || orders.error) return;
-                S.orders = orders;
-                const pendingCnt = orders.filter(o => o.status === 'รอชำระ' || o.status === 'รอตรวจสลิป')
-                    .length;
-                if (pendingCnt > 0) {
-                    document.getElementById('pending-badge').textContent = pendingCnt;
-                    document.getElementById('pending-badge').style.display = '';
-                }
-                const c = document.querySelector('.card .table-wrap');
-                if (c) c.innerHTML = orderTable(orders.slice(0, 10));
             });
         }
 
@@ -1308,7 +1295,6 @@
                         '<div class="loading">ยังไม่มีหมวดหมู่ กด "+ เพิ่มหมวดหมู่" เพื่อเริ่มต้นครับ</div>');
                     return;
                 }
-                // Load products for count
                 gasCall('adminGetProducts', [], prods => {
                     S.prods = prods || [];
                     renderCategories();
@@ -1514,8 +1500,7 @@
         function openEditModal(type, id) {
             S.editId = id;
             const src = { cat: S.cats, prod: S.prods, bank: S.banks, wallet: S.wallets }[{
-                categories: 'cat',
-                products: 'prod', banks: 'bank', wallets: 'wallet'
+                categories: 'cat', products: 'prod', banks: 'bank', wallets: 'wallet'
             }[S.page] || type];
             buildModal(src?.find(i => String(i.id) === String(id)));
         }
@@ -1614,10 +1599,7 @@
 
         function saveModal() {
             const get = id => { const el = document.getElementById(id); return el ? el.value : ''; };
-            const getChk = id => {
-                const el = document.getElementById(id); return el ? String(el.checked) :
-                    'true';
-            };
+            const getChk = id => { const el = document.getElementById(id); return el ? String(el.checked) : 'true'; };
             let data = { id: S.editId || '' };
 
             if (S.page === 'categories') {
@@ -1632,9 +1614,8 @@
                 if (!get('f-name').trim()) { showToast('❌ กรุณาใส่ชื่อสินค้า', 'error'); return; }
                 if (!get('f-catId')) { showToast('❌ กรุณาเลือกหมวดหมู่', 'error'); return; }
                 Object.assign(data, {
-                    name: get('f-name'), img: get('f-img'), desc: get('f-desc'), price: Number(
-                        get('f-price')) || 0, discountPrice: Number(get('f-discountPrice')) || 0, catId: get(
-                            'f-catId'), active: getChk('f-active')
+                    name: get('f-name'), img: get('f-img'), desc: get('f-desc'), price: Number(get('f-price')) || 0,
+                    discountPrice: Number(get('f-discountPrice')) || 0, catId: get('f-catId'), active: getChk('f-active')
                 });
                 gasCall('adminSaveProduct', [data, S.pwd], onSaveSuccess);
             } else if (S.page === 'banks') {
@@ -1648,8 +1629,7 @@
                 gasCall('adminSaveBank', [data, S.pwd], onSaveSuccess);
             } else if (S.page === 'wallets') {
                 if (!get('f-accountName').trim() || !get('f-accountNumber').trim()) {
-                    showToast(
-                        '❌ กรุณากรอกข้อมูลให้ครบ', 'error'); return;
+                    showToast('❌ กรุณากรอกข้อมูลให้ครบ', 'error'); return;
                 }
                 Object.assign(data, {
                     accountName: get('f-accountName'), accountNumber: get('f-accountNumber'),
