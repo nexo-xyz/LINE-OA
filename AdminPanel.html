@@ -916,7 +916,9 @@
                 เข้าสู่ระบบ</button>
             <p id="login-err" style="color:var(--red);font-size:12px;margin-top:10px;display:none">รหัสผ่านไม่ถูกต้อง
             </p>
-            <p style="color:var(--text3);font-size:10px;margin-top:16px" id="env-hint">Environment: Detecting...</p>
+            <p style="color:var(--text3);font-size:10px;margin-top:16px" id="env-hint">Environment: กำลังตรวจสอบ...</p>
+            <div id="login-loading" style="display:none;margin-top:10px"><span
+                    class="spinner"></span>กำลังเข้าสู่ระบบ...</div>
         </div>
     </div>
 
@@ -979,60 +981,52 @@
 
     <script>
         // ===== CONFIGURATION =====
-        // เปลี่ยน URL นี้เป็น Web App URL ของคุณหลังจาก Deploy
-        const GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyQ6zqqaPrMRVRLuYOTbSSPvK_lmGW5B1eeSD-OnuUTgb3qEZIzg8GJ02biM7VSsvzUyg/exec';
+        // เปลี่ยน URL นี้เป็น Web App URL ของคุณหลังจาก Deploy GAS
+        const GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwPXbUTeEnGlZYMrFsNjPjpGvnkjup9icqWPtGx4lAZ-bOQCTf-Ul-QgEUDci2vrgarkg/exec';
 
-        // ตรวจสอบว่าเราเชื่อมต่อกับ GAS จริงหรือไม่
+        // โหมดการทำงาน
         let isGAS = false;
+        let gasChecked = false;
 
-        // ทดสอบการเชื่อมต่อกับ GAS
+        // ===== ตรวจสอบการเชื่อมต่อ GAS =====
         async function checkGASConnection() {
             try {
-                const res = await fetch(GAS_WEBAPP_URL + '?page=status');
+                const res = await fetch(GAS_WEBAPP_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'initSheets', args: [] }),
+                    redirect: 'follow'
+                });
                 const data = await res.json();
-                if (data.status === 'ok') {
+                if (data && (data.success || data.message)) {
                     isGAS = true;
-                    document.getElementById('env-hint').textContent = 'Environment: Google Apps Script ✅ (Connected)';
+                    document.getElementById('env-hint').textContent = 'Environment: Google Apps Script ✅ (เชื่อมต่อสำเร็จ)';
+                    console.log('GAS Connected!');
                     return true;
                 }
             } catch (e) {
-                console.log('GAS connection failed, using demo mode:', e.message);
+                console.log('GAS not available, using Demo Mode:', e.message);
             }
-            document.getElementById('env-hint').textContent = 'Environment: Demo Mode (Mock Data) ⚠️';
+            isGAS = false;
+            document.getElementById('env-hint').textContent = 'Environment: Demo Mode ⚠️ (รหัสผ่าน: admin1234)';
             return false;
         }
 
-        // เรียกตรวจสอบตอนเริ่ม
+        // ตรวจสอบ GAS ทันทีที่โหลดหน้า
         checkGASConnection();
 
-        // ===== MOCK DATA (fallback) =====
+        // ===== MOCK DATA (fallback สำหรับ Demo Mode) =====
         const MOCK = {
             stats: {
-                todaySales: 12500,
-                monthSales: 285000,
-                totalSales: 1580000,
-                totalUsers: 452,
-                todayTopup: 3500,
-                monthTopup: 89000,
-                totalTopup: 520000,
-                salesChart: [
-                    { label: '27/4', value: 8500 },
-                    { label: '28/4', value: 12000 },
-                    { label: '29/4', value: 7500 },
-                    { label: '30/4', value: 15000 },
-                    { label: '1/5', value: 11000 },
-                    { label: '2/5', value: 9800 },
-                    { label: '3/5', value: 12500 }
-                ],
-                topupChart: [
-                    { label: '27/4', value: 2000 },
-                    { label: '28/4', value: 3500 },
-                    { label: '29/4', value: 1500 },
-                    { label: '30/4', value: 4000 },
-                    { label: '1/5', value: 3000 },
-                    { label: '2/5', value: 2500 },
-                    { label: '3/5', value: 3500 }
-                ],
+                todaySales: 0,
+                monthSales: 0,
+                totalSales: 0,
+                totalUsers: 0,
+                todayTopup: 0,
+                monthTopup: 0,
+                totalTopup: 0,
+                salesChart: [],
+                topupChart: [],
                 _orders: []
             },
             cats: [],
@@ -1047,6 +1041,7 @@
             if (isGAS) {
                 // เรียก GAS Web App จริง
                 try {
+                    console.log(`[GAS] Calling ${fnName}...`);
                     const res = await fetch(GAS_WEBAPP_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -1054,13 +1049,15 @@
                         redirect: 'follow'
                     });
                     const data = await res.json();
+                    console.log(`[GAS] ${fnName} response:`, data);
                     onSuccess(data);
                 } catch (err) {
                     console.error('GAS call error:', err);
+                    showToast('❌ ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
                     onSuccess({ error: err.message });
                 }
             } else {
-                // Mock call
+                // Mock call (Demo Mode)
                 console.log(`[Mock] Calling ${fnName} with args:`, args);
                 setTimeout(() => {
                     const result = mockGetData(fnName, args);
@@ -1076,7 +1073,7 @@
         function mockGetData(fnName, args) {
             switch (fnName) {
                 case 'adminGetStats':
-                    return { ...MOCK.stats, _orders: MOCK.orders };
+                    return { ...MOCK.stats, _orders: MOCK.orders || [] };
                 case 'adminGetCategories':
                     return [...MOCK.cats];
                 case 'adminGetProducts':
@@ -1143,7 +1140,7 @@
 
         // ===== STATE =====
         const S = {
-            page: 'dashboard', pwd: 'admin1234', editId: null,
+            page: 'dashboard', pwd: '', editId: null,
             cats: [], prods: [], banks: [], wallets: [], orders: [],
             stats: null
         };
@@ -1151,36 +1148,83 @@
         // ===== LOGIN =====
         async function doLogin() {
             const pwd = document.getElementById('login-pwd').value;
+            const errEl = document.getElementById('login-err');
+            const loadingEl = document.getElementById('login-loading');
+
+            if (!pwd) {
+                errEl.style.display = 'block';
+                errEl.textContent = 'กรุณาใส่รหัสผ่าน';
+                return;
+            }
+
+            // แสดง loading
+            loadingEl.style.display = 'block';
+            errEl.style.display = 'none';
+
             S.pwd = pwd;
 
             if (isGAS) {
-                // ตรวจสอบรหัสผ่านผ่าน API
-                gasCall('adminAuth', [pwd], (ok) => {
-                    if (ok === true || (ok && ok.success)) {
+                // โหมด GAS - ตรวจสอบรหัสผ่านผ่าน API
+                try {
+                    console.log('[Login] Checking password via GAS...');
+                    const res = await fetch(GAS_WEBAPP_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'adminAuth', args: [pwd] }),
+                        redirect: 'follow'
+                    });
+                    const result = await res.json();
+                    console.log('[Login] GAS response:', result);
+
+                    loadingEl.style.display = 'none';
+
+                    if (result === true || (result && result.success)) {
+                        // Login สำเร็จ
                         document.getElementById('login-screen').classList.add('hidden');
                         document.getElementById('app').classList.remove('hidden');
                         loadPage('dashboard');
                     } else {
-                        document.getElementById('login-err').style.display = 'block';
+                        errEl.style.display = 'block';
+                        errEl.textContent = 'รหัสผ่านไม่ถูกต้อง (ค่าเริ่มต้น: admin1234)';
                     }
-                });
-            } else {
-                // Demo mode
-                if (pwd === 'admin1234' || pwd === 'demo') {
-                    document.getElementById('login-screen').classList.add('hidden');
-                    document.getElementById('app').classList.remove('hidden');
-                    loadPage('dashboard');
-                } else {
-                    document.getElementById('login-err').style.display = 'block';
+                } catch (err) {
+                    console.error('[Login] Error:', err);
+                    loadingEl.style.display = 'none';
+                    errEl.style.display = 'block';
+                    errEl.textContent = 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ ลองใหม่';
                 }
+            } else {
+                // Demo Mode - ตรวจสอบรหัสผ่านในเครื่อง
+                setTimeout(() => {
+                    loadingEl.style.display = 'none';
+
+                    if (pwd === 'admin1234' || pwd === 'demo') {
+                        document.getElementById('login-screen').classList.add('hidden');
+                        document.getElementById('app').classList.remove('hidden');
+                        loadPage('dashboard');
+                    } else {
+                        errEl.style.display = 'block';
+                        errEl.textContent = 'รหัสผ่านไม่ถูกต้อง (Demo Mode: admin1234)';
+                    }
+                }, 500);
             }
         }
 
-        document.getElementById('login-pwd').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+        // กด Enter เพื่อ Login
+        document.getElementById('login-pwd').addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') doLogin();
+        });
 
-        function logout() { location.reload(); }
+        function logout() {
+            S.pwd = '';
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.getElementById('app').classList.add('hidden');
+            document.getElementById('login-pwd').value = '';
+            document.getElementById('login-err').style.display = 'none';
+            document.getElementById('login-pwd').focus();
+        }
 
-        // ===== NAV =====
+        // ===== NAVIGATION =====
         document.querySelectorAll('.nav-item[data-page]').forEach(el => {
             el.addEventListener('click', () => loadPage(el.dataset.page));
         });
@@ -1201,8 +1245,7 @@
         function loadPage(page) {
             S.page = page;
             S.editId = null;
-            document.querySelectorAll('.nav-item[data-page]').forEach(el => el.classList.toggle('active', el.dataset
-                .page === page));
+            document.querySelectorAll('.nav-item[data-page]').forEach(el => el.classList.toggle('active', el.dataset.page === page));
             document.getElementById('page-title').textContent = PAGE_TITLES[page];
             const addBtn = document.getElementById('add-btn');
             if (ADD_LABELS[page]) {
@@ -1211,77 +1254,54 @@
             } else addBtn.classList.add('hidden');
             setContent('<div class="loading"><span class="spinner"></span>กำลังโหลด...</div>');
             switch (page) {
-                case 'dashboard':
-                    loadDashboard();
-                    break;
-                case 'categories':
-                    loadCategories();
-                    break;
-                case 'products':
-                    loadProducts();
-                    break;
-                case 'banks':
-                    loadBanks();
-                    break;
-                case 'wallets':
-                    loadWallets();
-                    break;
-                case 'orders':
-                    loadOrders();
-                    break;
+                case 'dashboard': loadDashboard(); break;
+                case 'categories': loadCategories(); break;
+                case 'products': loadProducts(); break;
+                case 'banks': loadBanks(); break;
+                case 'wallets': loadWallets(); break;
+                case 'orders': loadOrders(); break;
             }
         }
 
         function refreshPage() { loadPage(S.page); }
-
         function setContent(html) { document.getElementById('content').innerHTML = html; }
 
         // ===== DASHBOARD =====
         function loadDashboard() {
             gasCall('adminGetStats', [S.pwd], stats => {
                 if (stats.error) {
-                    setContent('<div class="loading">❌ ' + stats.error +
-                        '</div>'); return;
+                    setContent('<div class="loading">❌ ' + stats.error + '</div>'); return;
                 }
                 S.stats = stats;
-                const maxS = Math.max(...(stats.salesChart || []).map(d => d.value), 1);
-                const maxT = Math.max(...(stats.topupChart || []).map(d => d.value), 1);
+                const salesChart = stats.salesChart || [];
+                const topupChart = stats.topupChart || [];
+                const maxS = Math.max(...salesChart.map(d => d.value || 0), 1);
+                const maxT = Math.max(...topupChart.map(d => d.value || 0), 1);
+
                 const bars = (data, cls, max) => (data || []).map(d => `
       <div class="bar-col">
-        <span class="bar-val">฿${d.value > 0 ? d.value.toLocaleString() : ''}</span>
-        <div class="bar bar-${cls}" style="height:${Math.max(Math.round(d.value / max * 90), d.value > 0 ? 4 : 2)}px"></div>
-        <span class="bar-label">${d.label}</span>
+        <span class="bar-val">฿${(d.value || 0).toLocaleString()}</span>
+        <div class="bar bar-${cls}" style="height:${Math.max(Math.round((d.value || 0) / max * 90), (d.value || 0) > 0 ? 4 : 2)}px"></div>
+        <span class="bar-label">${d.label || ''}</span>
       </div>`).join('');
-
-                const orders = stats._orders || [];
-                const pendingCnt = orders.filter(o => o.status === 'รอชำระ' || o.status ===
-                    'รอตรวจสลิป').length;
-                if (pendingCnt > 0) {
-                    document.getElementById('pending-badge').textContent = pendingCnt;
-                    document.getElementById('pending-badge').style.display = '';
-                }
 
                 setContent(`
     <div class="stat-grid">
-      <div class="stat-card sc-gold"><div class="stat-icon">💰</div><div class="stat-label">รายได้วันนี้</div><div class="stat-val sv-gold">฿${(stats.todaySales || 0).toLocaleString()}</div><div class="stat-sub">สำเร็จแล้ว</div></div>
-      <div class="stat-card sc-purple"><div class="stat-icon">📅</div><div class="stat-label">รายได้เดือนนี้</div><div class="stat-val sv-purple">฿${(stats.monthSales || 0).toLocaleString()}</div><div class="stat-sub">฿${(stats.totalSales || 0).toLocaleString()} รวมทั้งหมด</div></div>
-      <div class="stat-card sc-blue"><div class="stat-icon">👥</div><div class="stat-label">ผู้ใช้งานทั้งหมด</div><div class="stat-val sv-blue">${(stats.totalUsers || 0).toLocaleString()}</div><div class="stat-sub">LINE Followers</div></div>
-      <div class="stat-card sc-green"><div class="stat-icon">🔼</div><div class="stat-label">เติมเงินวันนี้</div><div class="stat-val sv-green">฿${(stats.todayTopup || 0).toLocaleString()}</div><div class="stat-sub">สำเร็จแล้ว</div></div>
-      <div class="stat-card sc-orange"><div class="stat-icon">📆</div><div class="stat-label">เติมเงินเดือนนี้</div><div class="stat-val sv-orange">฿${(stats.monthTopup || 0).toLocaleString()}</div><div class="stat-sub">฿${(stats.totalTopup || 0).toLocaleString()} รวมทั้งหมด</div></div>
+      <div class="stat-card sc-gold"><div class="stat-icon">💰</div><div class="stat-label">รายได้วันนี้</div><div class="stat-val sv-gold">฿${(stats.todaySales || 0).toLocaleString()}</div></div>
+      <div class="stat-card sc-purple"><div class="stat-icon">📅</div><div class="stat-label">รายได้เดือนนี้</div><div class="stat-val sv-purple">฿${(stats.monthSales || 0).toLocaleString()}</div></div>
+      <div class="stat-card sc-blue"><div class="stat-icon">👥</div><div class="stat-label">ผู้ใช้งาน</div><div class="stat-val sv-blue">${(stats.totalUsers || 0).toLocaleString()}</div></div>
+      <div class="stat-card sc-green"><div class="stat-icon">🔼</div><div class="stat-label">เติมเงินวันนี้</div><div class="stat-val sv-green">฿${(stats.todayTopup || 0).toLocaleString()}</div></div>
+      <div class="stat-card sc-orange"><div class="stat-icon">📆</div><div class="stat-label">เติมเงินเดือนนี้</div><div class="stat-val sv-orange">฿${(stats.monthTopup || 0).toLocaleString()}</div></div>
     </div>
     <div class="grid-2">
       <div class="card">
-        <div class="card-header"><span class="card-title">📈 ยอดขายรายวัน (7 วันล่าสุด)</span><span class="badge badge-warning">฿${(stats.totalSales || 0).toLocaleString()}</span></div>
-        <div class="bar-chart">${bars(stats.salesChart, 'sales', maxS)}</div>
+        <div class="card-header"><span class="card-title">📈 ยอดขาย (7 วัน)</span></div>
+        <div class="bar-chart">${bars(salesChart, 'sales', maxS)}</div>
       </div>
       <div class="card">
-        <div class="card-header"><span class="card-title">💜 รายรับเติมเงินรายวัน</span><span class="badge badge-purple">฿${(stats.totalTopup || 0).toLocaleString()}</span></div>
-        <div class="bar-chart">${bars(stats.topupChart, 'topup', maxT)}</div>
+        <div class="card-header"><span class="card-title">💜 เติมเงิน (7 วัน)</span></div>
+        <div class="bar-chart">${bars(topupChart, 'topup', maxT)}</div>
       </div>
-    </div>
-    <div class="card">
-      <div class="card-header"><span class="card-title">🧾 รายการล่าสุด</span><button class="btn btn-secondary btn-sm" onclick="loadPage('orders')">ดูทั้งหมด →</button></div>
-      <div class="table-wrap">${orderTable(orders.slice(0, 10))}</div>
     </div>`);
             });
         }
@@ -1291,8 +1311,7 @@
             gasCall('adminGetCategories', [], data => {
                 S.cats = data || [];
                 if (!S.cats.length) {
-                    setContent(
-                        '<div class="loading">ยังไม่มีหมวดหมู่ กด "+ เพิ่มหมวดหมู่" เพื่อเริ่มต้นครับ</div>');
+                    setContent('<div class="loading">ยังไม่มีหมวดหมู่ กด "+ เพิ่มหมวดหมู่" เพื่อเริ่มต้นครับ</div>');
                     return;
                 }
                 gasCall('adminGetProducts', [], prods => {
@@ -1308,7 +1327,7 @@
         <div class="item-thumb">${c.img ? `<img src="${c.img}" onerror="this.style.display='none'">` : '🏷️'}</div>
         <div class="item-info">
           <div class="item-name">${escHtml(c.name)}</div>
-          <div class="item-detail">คีย์เวิร์ด: ${escHtml(String(c.keyword))} · สินค้า: ${S.prods.filter(p => String(p.catId) === String(c.id)).length} รายการ</div>
+          <div class="item-detail">คีย์เวิร์ด: ${escHtml(String(c.keyword))} · ${S.prods.filter(p => String(p.catId) === String(c.id)).length} รายการ</div>
         </div>
         <span class="badge ${c.active === 'true' || c.active === true ? 'badge-success' : 'badge-danger'}">${c.active === 'true' || c.active === true ? 'เปิด' : 'ปิด'}</span>
         <div class="item-actions">
@@ -1326,8 +1345,7 @@
                 gasCall('adminGetCategories', [], cats => {
                     S.cats = cats || [];
                     if (!S.prods.length) {
-                        setContent(
-                            '<div class="loading">ยังไม่มีสินค้า กด "+ เพิ่มสินค้า" เพื่อเริ่มต้นครับ</div>');
+                        setContent('<div class="loading">ยังไม่มีสินค้า กด "+ เพิ่มสินค้า" เพื่อเริ่มต้นครับ</div>');
                         return;
                     }
                     renderProducts();
@@ -1343,7 +1361,7 @@
           <div class="item-thumb">${p.img ? `<img src="${p.img}" onerror="this.style.display='none'">` : '📦'}</div>
           <div class="item-info">
             <div class="item-name">${escHtml(p.name)} <span class="badge badge-info" style="font-size:10px">${cat ? escHtml(cat.name) : '-'}</span></div>
-            <div class="item-detail">ราคา: ฿${price}${p.discountPrice > 0 ? ` (ลดจาก ฿${p.price})` : ''} · ${escHtml(String(p.desc || '').substring(0, 40))}</div>
+            <div class="item-detail">฿${price}${p.discountPrice > 0 ? ` (ลดจาก ฿${p.price})` : ''} · ${escHtml(String(p.desc || '').substring(0, 40))}</div>
           </div>
           <span class="badge ${p.active === 'true' || p.active === true ? 'badge-success' : 'badge-danger'}">${p.active === 'true' || p.active === true ? 'เปิด' : 'ปิด'}</span>
           <div class="item-actions">
@@ -1360,8 +1378,7 @@
             gasCall('adminGetBanks', [], data => {
                 S.banks = data || [];
                 if (!S.banks.length) {
-                    setContent(
-                        '<div class="loading">ยังไม่มีช่องทางธนาคาร</div>'); return;
+                    setContent('<div class="loading">ยังไม่มีช่องทางธนาคาร</div>'); return;
                 }
                 setContent('<div class="item-list">' + S.banks.map(b => `
       <div class="item-row">
@@ -1385,8 +1402,7 @@
             gasCall('adminGetWallets', [], data => {
                 S.wallets = data || [];
                 if (!S.wallets.length) {
-                    setContent(
-                        '<div class="loading">ยังไม่มีช่องทาง True Wallet</div>'); return;
+                    setContent('<div class="loading">ยังไม่มีช่องทาง True Wallet</div>'); return;
                 }
                 setContent('<div class="item-list">' + S.wallets.map(w => `
       <div class="item-row">
@@ -1409,43 +1425,36 @@
         function loadOrders() {
             gasCall('adminGetOrders', [S.pwd], data => {
                 S.orders = data || [];
-                const pendingCnt = S.orders.filter(o => o.status === 'รอชำระ' || o.status === 'รอตรวจสลิป')
-                    .length;
+                const pendingCnt = S.orders.filter(o => o.status === 'รอชำระ' || o.status === 'รอตรวจสลิป').length;
+                const badge = document.getElementById('pending-badge');
                 if (pendingCnt > 0) {
-                    document.getElementById('pending-badge').textContent = pendingCnt;
-                    document.getElementById('pending-badge').style.display = '';
-                } else document.getElementById(
-                    'pending-badge').style.display = 'none';
+                    badge.textContent = pendingCnt;
+                    badge.style.display = '';
+                } else badge.style.display = 'none';
 
                 const tabs = ['ทั้งหมด', 'รอชำระ', 'รอตรวจสลิป', 'สำเร็จ', 'ยกเลิก'];
-                let activeTab = 'ทั้งหมด';
                 const renderOrders = (tab) => {
-                    activeTab = tab;
-                    const filtered = tab === 'ทั้งหมด' ? S.orders : S.orders.filter(o => o.status ===
-                        tab);
+                    const filtered = tab === 'ทั้งหมด' ? S.orders : S.orders.filter(o => o.status === tab);
                     document.getElementById('order-table-wrap').innerHTML = filtered.length ?
                         `<div class="table-wrap">${orderTable(filtered, true)}</div>` :
                         '<div class="loading" style="padding:30px">ไม่มีรายการ</div>';
-                    document.querySelectorAll('.order-tab').forEach(t => t.classList.toggle('active', t
-                        .dataset.tab === tab));
+                    document.querySelectorAll('.order-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
                 };
 
                 setContent(`
       <div class="tabs" id="order-tabs">
-        ${tabs.map(t => `<div class="tab order-tab" data-tab="${t}">${t}${t === 'รอชำระ' && pendingCnt > 0 ? ` (${pendingCnt})` : ''}${t === 'รอตรวจสลิป' && S.orders.filter(o => o.status === 'รอตรวจสลิป').length > 0 ? ` (${S.orders.filter(o => o.status === 'รอตรวจสลิป').length})` : ''}</div>`).join('')}
+        ${tabs.map(t => `<div class="tab order-tab" data-tab="${t}">${t}</div>`).join('')}
       </div>
       <div id="order-table-wrap"></div>`);
 
-                document.querySelectorAll('.order-tab').forEach(t => t.addEventListener('click', () =>
-                    renderOrders(t.dataset.tab)));
+                document.querySelectorAll('.order-tab').forEach(t => t.addEventListener('click', () => renderOrders(t.dataset.tab)));
                 renderOrders('ทั้งหมด');
             });
         }
 
         function orderTable(data, showActions) {
             if (!data || !data.length) return '<div class="loading" style="padding:20px">ไม่มีรายการ</div>';
-            const statusBadge = s => s === 'สำเร็จ' ? 'badge-success' : s === 'รอชำระ' ? 'badge-warning' : s ===
-                'รอตรวจสลิป' ? 'badge-info' : 'badge-danger';
+            const statusBadge = s => s === 'สำเร็จ' ? 'badge-success' : s === 'รอชำระ' ? 'badge-warning' : s === 'รอตรวจสลิป' ? 'badge-info' : 'badge-danger';
             return `<table>
     <tr><th>ออเดอร์</th><th>ลูกค้า</th><th>สินค้า</th><th>ยอด</th><th>สถานะ</th><th>วันที่</th>${showActions ? '<th>จัดการ</th>' : ''}</tr>
     ${data.map(o => `<tr>
@@ -1469,7 +1478,7 @@
 
         function updateOrderStatus(id, status) {
             gasCall('adminUpdateOrderStatus', [id, status, S.pwd], r => {
-                if (r.error) { showToast('❌ เกิดข้อผิดพลาด', 'error'); return; }
+                if (r && r.error) { showToast('❌ ' + r.error, 'error'); return; }
                 showToast('✅ อัปเดตสถานะแล้ว', 'success');
                 loadOrders();
             });
@@ -1486,7 +1495,7 @@
                 wallet: 'adminSaveWallet'
             };
             gasCall(fnMap[type], [item, S.pwd], r => {
-                if (r.error) { showToast('❌ เกิดข้อผิดพลาด', 'error'); return; }
+                if (r && r.error) { showToast('❌ ' + r.error, 'error'); return; }
                 showToast('✅ อัปเดตแล้ว', 'success');
             });
         }
@@ -1518,43 +1527,21 @@
             if (S.page === 'categories') {
                 return `<div class="form-grid">
       <div class="form-group full"><label class="form-label">ชื่อหมวดหมู่ *</label><input class="form-input" id="f-name" value="${escHtml(d.name || '')}" placeholder="เช่น เครื่องดื่ม"></div>
-      <div class="form-group full">
-        <label class="form-label">URL รูปภาพ</label>
-        <input class="form-input" id="f-img" value="${escHtml(d.img || '')}" placeholder="https://..." oninput="updateImgPreview('prev-img',this.value)">
-        <div class="img-preview" id="prev-img">${d.img ? `<img src="${d.img}">` : 'ใส่ URL เพื่อดูตัวอย่าง'}</div>
-      </div>
+      <div class="form-group full"><label class="form-label">URL รูปภาพ</label><input class="form-input" id="f-img" value="${escHtml(d.img || '')}" placeholder="https://..." oninput="updateImgPreview('prev-img',this.value)"><div class="img-preview" id="prev-img">${d.img ? `<img src="${d.img}">` : 'ใส่ URL เพื่อดูตัวอย่าง'}</div></div>
       <div class="form-group full"><label class="form-label">คีย์เวิร์ด * (คั่นด้วยคอมม่า)</label><input class="form-input" id="f-keyword" value="${escHtml(String(d.keyword || ''))}" placeholder="drink,เครื่องดื่ม,coffee"></div>
-      <div class="form-group">
-        <label class="form-label">สถานะ</label>
-        <div class="toggle-wrap" style="margin-top:4px">
-          <label class="toggle"><input type="checkbox" id="f-active" ${d.active === 'true' || d.active === true || d.active === undefined ? 'checked' : ''}><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
-          <span style="font-size:13px;color:var(--text2)">เปิดใช้งาน</span>
-        </div>
-      </div>
+      <div class="form-group"><label class="form-label">สถานะ</label><div class="toggle-wrap" style="margin-top:4px"><label class="toggle"><input type="checkbox" id="f-active" ${d.active === 'true' || d.active === true || d.active === undefined ? 'checked' : ''}><div class="toggle-track"></div><div class="toggle-thumb"></div></label><span style="font-size:13px;color:var(--text2)">เปิดใช้งาน</span></div></div>
     </div>`;
             }
             if (S.page === 'products') {
-                const catOpts = S.cats.map(c =>
-                    `<option value="${c.id}" ${String(d.catId) === String(c.id) ? 'selected' : ''}>${escHtml(c.name)}</option>`
-                ).join('');
+                const catOpts = S.cats.map(c => `<option value="${c.id}" ${String(d.catId) === String(c.id) ? 'selected' : ''}>${escHtml(c.name)}</option>`).join('');
                 return `<div class="form-grid">
       <div class="form-group full"><label class="form-label">ชื่อสินค้า *</label><input class="form-input" id="f-name" value="${escHtml(d.name || '')}" placeholder="ชื่อสินค้า"></div>
-      <div class="form-group full">
-        <label class="form-label">URL รูปภาพ</label>
-        <input class="form-input" id="f-img" value="${escHtml(d.img || '')}" placeholder="https://..." oninput="updateImgPreview('prev-img',this.value)">
-        <div class="img-preview" id="prev-img">${d.img ? `<img src="${d.img}">` : 'ใส่ URL เพื่อดูตัวอย่าง'}</div>
-      </div>
+      <div class="form-group full"><label class="form-label">URL รูปภาพ</label><input class="form-input" id="f-img" value="${escHtml(d.img || '')}" placeholder="https://..." oninput="updateImgPreview('prev-img',this.value)"><div class="img-preview" id="prev-img">${d.img ? `<img src="${d.img}">` : 'ใส่ URL เพื่อดูตัวอย่าง'}</div></div>
       <div class="form-group full"><label class="form-label">รายละเอียด</label><textarea class="form-input" id="f-desc" placeholder="รายละเอียดสินค้า...">${escHtml(d.desc || '')}</textarea></div>
       <div class="form-group"><label class="form-label">ราคาปกติ (฿) *</label><input class="form-input" id="f-price" type="number" value="${d.price || ''}" placeholder="0"></div>
-      <div class="form-group"><label class="form-label">ราคาส่วนลด (฿) ถ้าไม่มีใส่ 0</label><input class="form-input" id="f-discountPrice" type="number" value="${d.discountPrice || 0}" placeholder="0"></div>
-      <div class="form-group"><label class="form-label">หมวดหมู่ *</label><select class="form-input" id="f-catId"><option value="">-- เลือกหมวดหมู่ --</option>${catOpts}</select></div>
-      <div class="form-group">
-        <label class="form-label">สถานะ</label>
-        <div class="toggle-wrap" style="margin-top:4px">
-          <label class="toggle"><input type="checkbox" id="f-active" ${d.active === 'true' || d.active === true || d.active === undefined ? 'checked' : ''}><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
-          <span style="font-size:13px;color:var(--text2)">เปิดใช้งาน</span>
-        </div>
-      </div>
+      <div class="form-group"><label class="form-label">ราคาส่วนลด (฿)</label><input class="form-input" id="f-discountPrice" type="number" value="${d.discountPrice || 0}" placeholder="0"></div>
+      <div class="form-group"><label class="form-label">หมวดหมู่ *</label><select class="form-input" id="f-catId"><option value="">-- เลือก --</option>${catOpts}</select></div>
+      <div class="form-group"><label class="form-label">สถานะ</label><div class="toggle-wrap" style="margin-top:4px"><label class="toggle"><input type="checkbox" id="f-active" ${d.active === 'true' || d.active === true || d.active === undefined ? 'checked' : ''}><div class="toggle-track"></div><div class="toggle-thumb"></div></label><span style="font-size:13px;color:var(--text2)">เปิดใช้งาน</span></div></div>
     </div>`;
             }
             if (S.page === 'banks') {
@@ -1562,36 +1549,16 @@
       <div class="form-group"><label class="form-label">ชื่อบัญชี *</label><input class="form-input" id="f-accountName" value="${escHtml(d.accountName || '')}" placeholder="ชื่อ-นามสกุล"></div>
       <div class="form-group"><label class="form-label">ชื่อธนาคาร *</label><input class="form-input" id="f-bankName" value="${escHtml(d.bankName || '')}" placeholder="กสิกรไทย, ไทยพาณิชย์..."></div>
       <div class="form-group full"><label class="form-label">เลขบัญชี *</label><input class="form-input" id="f-accountNumber" value="${escHtml(d.accountNumber || '')}" placeholder="xxx-x-xxxxx-x"></div>
-      <div class="form-group full">
-        <label class="form-label">URL รูปภาพ (QR Code / โลโก้)</label>
-        <input class="form-input" id="f-img" value="${escHtml(d.img || '')}" placeholder="https://..." oninput="updateImgPreview('prev-img',this.value)">
-        <div class="img-preview" id="prev-img">${d.img ? `<img src="${d.img}">` : 'ใส่ URL เพื่อดูตัวอย่าง'}</div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">สถานะ</label>
-        <div class="toggle-wrap" style="margin-top:4px">
-          <label class="toggle"><input type="checkbox" id="f-active" ${d.active === 'true' || d.active === true || d.active === undefined ? 'checked' : ''}><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
-          <span style="font-size:13px;color:var(--text2)">เปิดใช้งาน</span>
-        </div>
-      </div>
+      <div class="form-group full"><label class="form-label">URL รูปภาพ</label><input class="form-input" id="f-img" value="${escHtml(d.img || '')}" placeholder="https://..." oninput="updateImgPreview('prev-img',this.value)"><div class="img-preview" id="prev-img">${d.img ? `<img src="${d.img}">` : 'ใส่ URL เพื่อดูตัวอย่าง'}</div></div>
+      <div class="form-group"><label class="form-label">สถานะ</label><div class="toggle-wrap" style="margin-top:4px"><label class="toggle"><input type="checkbox" id="f-active" ${d.active === 'true' || d.active === true || d.active === undefined ? 'checked' : ''}><div class="toggle-track"></div><div class="toggle-thumb"></div></label><span style="font-size:13px;color:var(--text2)">เปิดใช้งาน</span></div></div>
     </div>`;
             }
             if (S.page === 'wallets') {
                 return `<div class="form-grid">
       <div class="form-group full"><label class="form-label">ชื่อบัญชี *</label><input class="form-input" id="f-accountName" value="${escHtml(d.accountName || '')}" placeholder="ชื่อบัญชี True Wallet"></div>
-      <div class="form-group full"><label class="form-label">เบอร์โทร / เลขบัญชี *</label><input class="form-input" id="f-accountNumber" value="${escHtml(d.accountNumber || '')}" placeholder="08x-xxx-xxxx"></div>
-      <div class="form-group full">
-        <label class="form-label">URL รูปภาพ (QR Code)</label>
-        <input class="form-input" id="f-img" value="${escHtml(d.img || '')}" placeholder="https://..." oninput="updateImgPreview('prev-img',this.value)">
-        <div class="img-preview" id="prev-img">${d.img ? `<img src="${d.img}">` : 'ใส่ URL เพื่อดูตัวอย่าง'}</div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">สถานะ</label>
-        <div class="toggle-wrap" style="margin-top:4px">
-          <label class="toggle"><input type="checkbox" id="f-active" ${d.active === 'true' || d.active === true || d.active === undefined ? 'checked' : ''}><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
-          <span style="font-size:13px;color:var(--text2)">เปิดใช้งาน</span>
-        </div>
-      </div>
+      <div class="form-group full"><label class="form-label">เบอร์โทร *</label><input class="form-input" id="f-accountNumber" value="${escHtml(d.accountNumber || '')}" placeholder="08x-xxx-xxxx"></div>
+      <div class="form-group full"><label class="form-label">URL รูปภาพ</label><input class="form-input" id="f-img" value="${escHtml(d.img || '')}" placeholder="https://..." oninput="updateImgPreview('prev-img',this.value)"><div class="img-preview" id="prev-img">${d.img ? `<img src="${d.img}">` : 'ใส่ URL เพื่อดูตัวอย่าง'}</div></div>
+      <div class="form-group"><label class="form-label">สถานะ</label><div class="toggle-wrap" style="margin-top:4px"><label class="toggle"><input type="checkbox" id="f-active" ${d.active === 'true' || d.active === true || d.active === undefined ? 'checked' : ''}><div class="toggle-track"></div><div class="toggle-thumb"></div></label><span style="font-size:13px;color:var(--text2)">เปิดใช้งาน</span></div></div>
     </div>`;
             }
             return '';
@@ -1605,36 +1572,20 @@
             if (S.page === 'categories') {
                 if (!get('f-name').trim()) { showToast('❌ กรุณาใส่ชื่อหมวดหมู่', 'error'); return; }
                 if (!get('f-keyword').trim()) { showToast('❌ กรุณาใส่คีย์เวิร์ด', 'error'); return; }
-                Object.assign(data, {
-                    name: get('f-name'), img: get('f-img'), keyword: get('f-keyword'),
-                    active: getChk('f-active')
-                });
+                Object.assign(data, { name: get('f-name'), img: get('f-img'), keyword: get('f-keyword'), active: getChk('f-active') });
                 gasCall('adminSaveCategory', [data, S.pwd], onSaveSuccess);
             } else if (S.page === 'products') {
                 if (!get('f-name').trim()) { showToast('❌ กรุณาใส่ชื่อสินค้า', 'error'); return; }
                 if (!get('f-catId')) { showToast('❌ กรุณาเลือกหมวดหมู่', 'error'); return; }
-                Object.assign(data, {
-                    name: get('f-name'), img: get('f-img'), desc: get('f-desc'), price: Number(get('f-price')) || 0,
-                    discountPrice: Number(get('f-discountPrice')) || 0, catId: get('f-catId'), active: getChk('f-active')
-                });
+                Object.assign(data, { name: get('f-name'), img: get('f-img'), desc: get('f-desc'), price: Number(get('f-price')) || 0, discountPrice: Number(get('f-discountPrice')) || 0, catId: get('f-catId'), active: getChk('f-active') });
                 gasCall('adminSaveProduct', [data, S.pwd], onSaveSuccess);
             } else if (S.page === 'banks') {
-                if (!get('f-accountName').trim() || !get('f-bankName').trim() || !get('f-accountNumber').trim()) {
-                    showToast('❌ กรุณากรอกข้อมูลให้ครบ', 'error'); return;
-                }
-                Object.assign(data, {
-                    accountName: get('f-accountName'), bankName: get('f-bankName'),
-                    accountNumber: get('f-accountNumber'), img: get('f-img'), active: getChk('f-active')
-                });
+                if (!get('f-accountName').trim() || !get('f-bankName').trim() || !get('f-accountNumber').trim()) { showToast('❌ กรุณากรอกข้อมูลให้ครบ', 'error'); return; }
+                Object.assign(data, { accountName: get('f-accountName'), bankName: get('f-bankName'), accountNumber: get('f-accountNumber'), img: get('f-img'), active: getChk('f-active') });
                 gasCall('adminSaveBank', [data, S.pwd], onSaveSuccess);
             } else if (S.page === 'wallets') {
-                if (!get('f-accountName').trim() || !get('f-accountNumber').trim()) {
-                    showToast('❌ กรุณากรอกข้อมูลให้ครบ', 'error'); return;
-                }
-                Object.assign(data, {
-                    accountName: get('f-accountName'), accountNumber: get('f-accountNumber'),
-                    img: get('f-img'), active: getChk('f-active')
-                });
+                if (!get('f-accountName').trim() || !get('f-accountNumber').trim()) { showToast('❌ กรุณากรอกข้อมูลให้ครบ', 'error'); return; }
+                Object.assign(data, { accountName: get('f-accountName'), accountNumber: get('f-accountNumber'), img: get('f-img'), active: getChk('f-active') });
                 gasCall('adminSaveWallet', [data, S.pwd], onSaveSuccess);
             }
         }
@@ -1654,10 +1605,7 @@
         // ===== DELETE =====
         function deleteItem(type, id, name) {
             if (!confirm(`ต้องการลบ "${name}" ใช่ไหม?`)) return;
-            const fnMap = {
-                cat: 'adminDeleteCategory', prod: 'adminDeleteProduct', bank: 'adminDeleteBank',
-                wallet: 'adminDeleteWallet'
-            };
+            const fnMap = { cat: 'adminDeleteCategory', prod: 'adminDeleteProduct', bank: 'adminDeleteBank', wallet: 'adminDeleteWallet' };
             gasCall(fnMap[type], [id, S.pwd], r => {
                 if (r && r.error) { showToast('❌ ' + r.error, 'error'); return; }
                 showToast('✅ ลบสำเร็จ', 'success');
@@ -1669,13 +1617,11 @@
         function updateImgPreview(previewId, url) {
             const el = document.getElementById(previewId);
             if (!el) return;
-            el.innerHTML = url ? `<img src="${url}" onerror="this.parentNode.innerHTML='URL ไม่ถูกต้อง'">` :
-                'ใส่ URL เพื่อดูตัวอย่าง';
+            el.innerHTML = url ? `<img src="${url}" onerror="this.parentNode.innerHTML='URL ไม่ถูกต้อง'">` : 'ใส่ URL เพื่อดูตัวอย่าง';
         }
 
         function escHtml(s) {
-            return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;');
+            return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         }
 
         function showToast(msg, type = 'success') {
@@ -1689,8 +1635,10 @@
         // Close modal on overlay click
         document.getElementById('modal').addEventListener('click', function (e) { if (e.target === this) closeModal(); });
 
-        // Init
+        // Init - focus password input
         document.getElementById('login-pwd').focus();
+
+        console.log('Admin Panel loaded. GAS URL:', GAS_WEBAPP_URL);
     </script>
 </body>
 
