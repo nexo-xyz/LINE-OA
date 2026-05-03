@@ -890,6 +890,7 @@
             .stat-grid {
                 grid-template-columns: repeat(3, 1fr);
             }
+
             .grid-2 {
                 grid-template-columns: 1fr;
             }
@@ -900,15 +901,18 @@
                 width: 60px;
                 min-width: 60px;
             }
+
             .logo-wrap .logo-text,
             .logo-ver,
             .nav-sec,
             .nav-item span:not(.nav-icon) {
                 display: none;
             }
+
             .nav-item {
                 justify-content: center;
             }
+
             .stat-grid {
                 grid-template-columns: 1fr 1fr;
             }
@@ -927,7 +931,8 @@
             <input type="password" id="login-pwd" class="form-input" placeholder="รหัสผ่าน" style="margin-bottom:12px">
             <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doLogin()">🔓
                 เข้าสู่ระบบ</button>
-            <p id="login-err" style="color:var(--red);font-size:12px;margin-top:10px;display:none">รหัสผ่านไม่ถูกต้อง</p>
+            <p id="login-err" style="color:var(--red);font-size:12px;margin-top:10px;display:none">รหัสผ่านไม่ถูกต้อง
+            </p>
             <p style="color:var(--text3);font-size:10px;margin-top:16px" id="env-hint">Environment: Detecting...</p>
         </div>
     </div>
@@ -1139,8 +1144,10 @@
         }
 
         // ===== STATE =====
-        const S = { page: 'dashboard', pwd: '', editId: null, cats: [], prods: [], banks: [], wallets: [], orders: [],
-            stats: null };
+        const S = {
+            page: 'dashboard', pwd: '', editId: null, cats: [], prods: [], banks: [], wallets: [], orders: [],
+            stats: null
+        };
 
         // ===== LOGIN =====
         function doLogin() {
@@ -1186,8 +1193,10 @@
             wallets: '💳 True Wallet',
             orders: '🧾 ประวัติการขาย'
         };
-        const ADD_LABELS = { categories: '＋ เพิ่มหมวดหมู่', products: '＋ เพิ่มสินค้า', banks: '＋ เพิ่มธนาคาร',
-            wallets: '＋ เพิ่ม True Wallet' };
+        const ADD_LABELS = {
+            categories: '＋ เพิ่มหมวดหมู่', products: '＋ เพิ่มสินค้า', banks: '＋ เพิ่มธนาคาร',
+            wallets: '＋ เพิ่ม True Wallet'
+        };
 
         function loadPage(page) {
             S.page = page;
@@ -1196,8 +1205,10 @@
                 .page === page));
             document.getElementById('page-title').textContent = PAGE_TITLES[page];
             const addBtn = document.getElementById('add-btn');
-            if (ADD_LABELS[page]) { addBtn.textContent = ADD_LABELS[page];
-                addBtn.classList.remove('hidden'); } else addBtn.classList.add('hidden');
+            if (ADD_LABELS[page]) {
+                addBtn.textContent = ADD_LABELS[page];
+                addBtn.classList.remove('hidden');
+            } else addBtn.classList.add('hidden');
             setContent('<div class="loading"><span class="spinner"></span>กำลังโหลด...</div>');
             switch (page) {
                 case 'dashboard':
@@ -1228,8 +1239,10 @@
         // ===== DASHBOARD =====
         function loadDashboard() {
             gasCall('adminGetStats', [S.pwd], stats => {
-                if (stats.error) { setContent('<div class="loading">❌ ' + stats.error +
-                    '</div>'); return; }
+                if (stats.error) {
+                    setContent('<div class="loading">❌ ' + stats.error +
+                        '</div>'); return;
+                }
                 S.stats = stats;
                 const maxS = Math.max(...stats.salesChart.map(d => d.value), 1);
                 const maxT = Math.max(...stats.topupChart.map(d => d.value), 1);
@@ -1242,8 +1255,10 @@
 
                 const pendingCnt = (stats._orders || []).filter(o => o.status === 'รอชำระ' || o.status ===
                     'รอตรวจสลิป').length;
-                if (pendingCnt > 0) { document.getElementById('pending-badge').textContent = pendingCnt;
-                    document.getElementById('pending-badge').style.display = ''; }
+                if (pendingCnt > 0) {
+                    document.getElementById('pending-badge').textContent = pendingCnt;
+                    document.getElementById('pending-badge').style.display = '';
+                }
 
                 setContent(`
     <div class="stat-grid">
@@ -1275,8 +1290,10 @@
                 S.orders = orders;
                 const pendingCnt = orders.filter(o => o.status === 'รอชำระ' || o.status === 'รอตรวจสลิป')
                     .length;
-                if (pendingCnt > 0) { document.getElementById('pending-badge').textContent = pendingCnt;
-                    document.getElementById('pending-badge').style.display = ''; }
+                if (pendingCnt > 0) {
+                    document.getElementById('pending-badge').textContent = pendingCnt;
+                    document.getElementById('pending-badge').style.display = '';
+                }
                 const c = document.querySelector('.card .table-wrap');
                 if (c) c.innerHTML = orderTable(orders.slice(0, 10));
             });
@@ -1356,8 +1373,10 @@
         function loadBanks() {
             gasCall('adminGetBanks', [], data => {
                 S.banks = data || [];
-                if (!S.banks.length) { setContent(
-                    '<div class="loading">ยังไม่มีช่องทางธนาคาร</div>'); return; }
+                if (!S.banks.length) {
+                    setContent(
+                        '<div class="loading">ยังไม่มีช่องทางธนาคาร</div>'); return;
+                }
                 setContent('<div class="item-list">' + S.banks.map(b => `
       <div class="item-row">
         <div class="item-thumb">🏦</div>
@@ -1379,8 +1398,10 @@
         function loadWallets() {
             gasCall('adminGetWallets', [], data => {
                 S.wallets = data || [];
-                if (!S.wallets.length) { setContent(
-                    '<div class="loading">ยังไม่มีช่องทาง True Wallet</div>'); return; }
+                if (!S.wallets.length) {
+                    setContent(
+                        '<div class="loading">ยังไม่มีช่องทาง True Wallet</div>'); return;
+                }
                 setContent('<div class="item-list">' + S.wallets.map(w => `
       <div class="item-row">
         <div class="item-thumb">💳</div>
@@ -1404,8 +1425,10 @@
                 S.orders = data || [];
                 const pendingCnt = S.orders.filter(o => o.status === 'รอชำระ' || o.status === 'รอตรวจสลิป')
                     .length;
-                if (pendingCnt > 0) { document.getElementById('pending-badge').textContent = pendingCnt;
-                    document.getElementById('pending-badge').style.display = ''; } else document.getElementById(
+                if (pendingCnt > 0) {
+                    document.getElementById('pending-badge').textContent = pendingCnt;
+                    document.getElementById('pending-badge').style.display = '';
+                } else document.getElementById(
                     'pending-badge').style.display = 'none';
 
                 const tabs = ['ทั้งหมด', 'รอชำระ', 'รอตรวจสลิป', 'สำเร็จ', 'ยกเลิก'];
@@ -1468,12 +1491,14 @@
 
         // ===== TOGGLE =====
         function toggleActive(type, id, val) {
-            const src = { cat: S.cats, prod: S.prods, bank: S.banks, wallet: S.wallets } [type];
+            const src = { cat: S.cats, prod: S.prods, bank: S.banks, wallet: S.wallets }[type];
             const item = src.find(i => String(i.id) === String(id));
             if (!item) return;
             item.active = String(val);
-            const fnMap = { cat: 'adminSaveCategory', prod: 'adminSaveProduct', bank: 'adminSaveBank',
-                wallet: 'adminSaveWallet' };
+            const fnMap = {
+                cat: 'adminSaveCategory', prod: 'adminSaveProduct', bank: 'adminSaveBank',
+                wallet: 'adminSaveWallet'
+            };
             gasCall(fnMap[type], [item, S.pwd], r => {
                 if (r.error) { showToast('❌ เกิดข้อผิดพลาด', 'error'); return; }
                 showToast('✅ อัปเดตแล้ว', 'success');
@@ -1481,13 +1506,17 @@
         }
 
         // ===== MODAL =====
-        function openAddModal() { S.editId = null;
-            buildModal(); }
+        function openAddModal() {
+            S.editId = null;
+            buildModal();
+        }
 
         function openEditModal(type, id) {
             S.editId = id;
-            const src = { cat: S.cats, prod: S.prods, bank: S.banks, wallet: S.wallets } [{ categories: 'cat',
-                products: 'prod', banks: 'bank', wallets: 'wallet' } [S.page] || type];
+            const src = { cat: S.cats, prod: S.prods, bank: S.banks, wallet: S.wallets }[{
+                categories: 'cat',
+                products: 'prod', banks: 'bank', wallets: 'wallet'
+            }[S.page] || type];
             buildModal(src?.find(i => String(i.id) === String(id)));
         }
 
@@ -1522,7 +1551,7 @@
             if (S.page === 'products') {
                 const catOpts = S.cats.map(c =>
                     `<option value="${c.id}" ${String(d.catId) === String(c.id) ? 'selected' : ''}>${escHtml(c.name)}</option>`
-                    ).join('');
+                ).join('');
                 return `<div class="form-grid">
       <div class="form-group full"><label class="form-label">ชื่อสินค้า *</label><input class="form-input" id="f-name" value="${escHtml(d.name || '')}" placeholder="ชื่อสินค้า"></div>
       <div class="form-group full">
@@ -1585,34 +1614,47 @@
 
         function saveModal() {
             const get = id => { const el = document.getElementById(id); return el ? el.value : ''; };
-            const getChk = id => { const el = document.getElementById(id); return el ? String(el.checked) :
-                'true'; };
+            const getChk = id => {
+                const el = document.getElementById(id); return el ? String(el.checked) :
+                    'true';
+            };
             let data = { id: S.editId || '' };
 
             if (S.page === 'categories') {
                 if (!get('f-name').trim()) { showToast('❌ กรุณาใส่ชื่อหมวดหมู่', 'error'); return; }
                 if (!get('f-keyword').trim()) { showToast('❌ กรุณาใส่คีย์เวิร์ด', 'error'); return; }
-                Object.assign(data, { name: get('f-name'), img: get('f-img'), keyword: get('f-keyword'),
-                    active: getChk('f-active') });
+                Object.assign(data, {
+                    name: get('f-name'), img: get('f-img'), keyword: get('f-keyword'),
+                    active: getChk('f-active')
+                });
                 gasCall('adminSaveCategory', [data, S.pwd], onSaveSuccess);
             } else if (S.page === 'products') {
                 if (!get('f-name').trim()) { showToast('❌ กรุณาใส่ชื่อสินค้า', 'error'); return; }
                 if (!get('f-catId')) { showToast('❌ กรุณาเลือกหมวดหมู่', 'error'); return; }
-                Object.assign(data, { name: get('f-name'), img: get('f-img'), desc: get('f-desc'), price: Number(
+                Object.assign(data, {
+                    name: get('f-name'), img: get('f-img'), desc: get('f-desc'), price: Number(
                         get('f-price')) || 0, discountPrice: Number(get('f-discountPrice')) || 0, catId: get(
-                        'f-catId'), active: getChk('f-active') });
+                            'f-catId'), active: getChk('f-active')
+                });
                 gasCall('adminSaveProduct', [data, S.pwd], onSaveSuccess);
             } else if (S.page === 'banks') {
                 if (!get('f-accountName').trim() || !get('f-bankName').trim() || !get('f-accountNumber').trim()) {
-                    showToast('❌ กรุณากรอกข้อมูลให้ครบ', 'error'); return; }
-                Object.assign(data, { accountName: get('f-accountName'), bankName: get('f-bankName'),
-                    accountNumber: get('f-accountNumber'), img: get('f-img'), active: getChk('f-active') });
+                    showToast('❌ กรุณากรอกข้อมูลให้ครบ', 'error'); return;
+                }
+                Object.assign(data, {
+                    accountName: get('f-accountName'), bankName: get('f-bankName'),
+                    accountNumber: get('f-accountNumber'), img: get('f-img'), active: getChk('f-active')
+                });
                 gasCall('adminSaveBank', [data, S.pwd], onSaveSuccess);
             } else if (S.page === 'wallets') {
-                if (!get('f-accountName').trim() || !get('f-accountNumber').trim()) { showToast(
-                        '❌ กรุณากรอกข้อมูลให้ครบ', 'error'); return; }
-                Object.assign(data, { accountName: get('f-accountName'), accountNumber: get('f-accountNumber'),
-                    img: get('f-img'), active: getChk('f-active') });
+                if (!get('f-accountName').trim() || !get('f-accountNumber').trim()) {
+                    showToast(
+                        '❌ กรุณากรอกข้อมูลให้ครบ', 'error'); return;
+                }
+                Object.assign(data, {
+                    accountName: get('f-accountName'), accountNumber: get('f-accountNumber'),
+                    img: get('f-img'), active: getChk('f-active')
+                });
                 gasCall('adminSaveWallet', [data, S.pwd], onSaveSuccess);
             }
         }
@@ -1632,8 +1674,10 @@
         // ===== DELETE =====
         function deleteItem(type, id, name) {
             if (!confirm(`ต้องการลบ "${name}" ใช่ไหม?`)) return;
-            const fnMap = { cat: 'adminDeleteCategory', prod: 'adminDeleteProduct', bank: 'adminDeleteBank',
-                wallet: 'adminDeleteWallet' };
+            const fnMap = {
+                cat: 'adminDeleteCategory', prod: 'adminDeleteProduct', bank: 'adminDeleteBank',
+                wallet: 'adminDeleteWallet'
+            };
             gasCall(fnMap[type], [id, S.pwd], r => {
                 if (r && r.error) { showToast('❌ ' + r.error, 'error'); return; }
                 showToast('✅ ลบสำเร็จ', 'success');
@@ -1649,8 +1693,10 @@
                 'ใส่ URL เพื่อดูตัวอย่าง';
         }
 
-        function escHtml(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;'); }
+        function escHtml(s) {
+            return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
 
         function showToast(msg, type = 'success') {
             const t = document.getElementById('toast');
@@ -1661,7 +1707,7 @@
         }
 
         // Close modal on overlay click
-        document.getElementById('modal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+        document.getElementById('modal').addEventListener('click', function (e) { if (e.target === this) closeModal(); });
 
         // Init
         document.getElementById('login-pwd').focus();
